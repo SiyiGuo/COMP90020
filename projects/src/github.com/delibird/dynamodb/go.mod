@@ -1,3 +1,3 @@
-module githubs.com/delibird/dynamodb
+module github.com/delibird/dynamodb
 
 go 1.14
