@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Array;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -11,15 +12,71 @@ import java.util.concurrent.TimeUnit;
 for raft algorithm unittest
 */
 public class RaftConfig {
-
+    /*
+    Extra Stuff
+     */
     final static Logger logger = LogManager.getLogger(RaftConfig.class);
     final Random rand = new Random();
+
+    /*
+    From mit 6.824
+     */
     RaftNode[] rafts;
-    int n;
+    String[] applyErr; // from apply channel readers
     boolean[] connected;
+    RaftPersister[] saved;
+    String[][] endnames; // the port filenames each sends to
+    ArrayList<HashMap<Integer, RaftLog>> logs; // copy of each server's(RaftNode) committed entries
+    long start; // time at which RaftConfig() was created
+    //being/end()statistics
+    long t0; //time at which test called config.begin()
+    int rpcs0; //rptTotal() at start of test
+    int cmds0; // number of agreements
+    long bytes0;
+    int maxIndex;
+    int maxIndex0;
+    int n;
 
-    public RaftConfig() {
 
+
+
+    public RaftConfig(int n) {
+        this.n = n;
+        this.applyErr = new String[n];
+        this.rafts = new RaftNode[n];
+        for(int i = 0; i < n; i++) {
+            rafts[i] = new RaftNode();
+        }
+        this.connected = new boolean[n];
+        this.saved = new RaftPersister[n];
+        for(int i = 0; i < n; i++) {
+            saved[i] = new RaftPersister();
+        }
+        this.endnames = new String[n][];
+        this.logs = new ArrayList<HashMap<Integer, RaftLog>>();
+        for(int i = 0; i < n; i++) {
+            this.logs.add(new HashMap<Integer, RaftLog>());
+        }
+        this.start = Instant.now().getEpochSecond();
+
+
+        // create a set of raft node
+        for (int i = 0; i < this.n; i++) {
+
+        }
+
+        // connect everyone
+        for (int i = 0; i < this.n; i++) {
+            this.connect1(i);
+        }
+    }
+
+    public void start1(int nodeIndex) {
+
+    }
+
+    public void connect1(int nodeIndex) {
+        ;;
     }
 
     public int checkOneLeader() throws InterruptedException {

@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import raft.RaftConfig;
 
 public class RaftTest {
     final static Logger logger = LogManager.getLogger(RaftTest.class);
@@ -13,7 +14,9 @@ public class RaftTest {
         logger.debug("start testing");
     }
     @Test
-    public void checkOneLeader() {
+    public void testInitialElection() {
+        int servers = 3;
+        RaftConfig config = new RaftConfig(servers);
 
 
     }
