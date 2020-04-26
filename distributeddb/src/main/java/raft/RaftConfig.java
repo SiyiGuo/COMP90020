@@ -59,10 +59,9 @@ public class RaftConfig {
         }
         this.start = Instant.now().getEpochSecond();
 
-
         // create a set of raft node
         for (int i = 0; i < this.n; i++) {
-
+            this.start1(i);
         }
 
         // connect everyone
@@ -72,10 +71,16 @@ public class RaftConfig {
     }
 
     public void start1(int nodeIndex) {
-
+        // start a raft node
+        // if one already there, crash 1
+        this.crash1(nodeIndex);
     }
 
     public void connect1(int nodeIndex) {
+        // connect a raft node to the network
+    }
+
+    public void crash1(int nodeINdex) {
         ;;
     }
 
