@@ -1,7 +1,8 @@
-package raft;
+package raft.nodemodule;
 
 import raft.consensusmodule.*;
 import raft.logmodule.RaftLogModule;
+import raft.rpcmodule.RaftRpcServer;
 import raft.statemachinemodule.RaftStateMachine;
 
 public class RaftNode implements RaftLifeCycle {
@@ -20,6 +21,15 @@ public class RaftNode implements RaftLifeCycle {
     }
 
     public AppendEntriesResult handleAppendEntries(AppendEntriesArgs args) {
+
+    }
+
+    public ClientResponse handleClientRequest(ClientRequest req) {
+
+    }
+
+    // redirect to leader
+    public ClientResponse redirect(ClientRequest req) {
 
     }
 

@@ -1,6 +1,6 @@
 package raft.logmodule;
 
-public class LogModule {
+public class RaftLogModule {
 
     public void write(LogEntry logEntry) {
 

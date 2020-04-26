@@ -1,4 +1,4 @@
-package raft.result;
+package raft.consensusmodule;
 
 public class AppendEntriesResult {
 }

@@ -1,4 +1,4 @@
-package raft;
+package raft.nodemodule;
 
 public interface RaftLifeCycle {
     public void init();

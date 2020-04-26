@@ -1,4 +1,4 @@
 package raft.consensusmodule;
 
-public class RequestVoteResponse {
+public class RequestVoteResult {
 }
