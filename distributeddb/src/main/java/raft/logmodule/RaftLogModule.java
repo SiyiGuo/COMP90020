@@ -2,10 +2,19 @@ package raft.logmodule;
 
 import raft.LogModule;
 
-public class RaftLogModule implements LogModule {
-    @Override
-    public void write(LogEntry logEntry) {
+import java.util.ArrayList;
 
+public class RaftLogModule implements LogModule {
+    private ArrayList<LogEntry> logs;
+
+    public RaftLogModule() {
+        this.logs = new ArrayList<>();
+    }
+
+    @Override
+    public void append(LogEntry logEntry) {
+        this.logs.add(logEntry);
+        //TODO: write to file?
     }
 
     @Override

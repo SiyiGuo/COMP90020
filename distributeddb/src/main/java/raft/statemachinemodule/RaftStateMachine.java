@@ -1,9 +1,17 @@
 package raft.statemachinemodule;
 
+import raft.LogModule;
 import raft.StateMachine;
 import raft.logmodule.LogEntry;
+import raft.logmodule.RaftLogModule;
+
+import java.util.ArrayList;
 
 public class RaftStateMachine implements StateMachine {
+    public RaftStateMachine() {
+    }
+
+
     @Override
     public void apply(LogEntry logEntry) {
 

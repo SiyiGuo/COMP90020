@@ -3,7 +3,7 @@ package raft;
 import raft.logmodule.LogEntry;
 
 public interface LogModule {
-    void write(LogEntry logEntry);
+    void append(LogEntry logEntry);
 
     LogEntry read(Long index);
 
