@@ -1,12 +1,16 @@
 package raft.consensusmodule;
 
-public class RaftConsensus {
+import raft.Consensus;
 
-    RequestVoteResult requestVote(RequestVoteArgs args) {
+public class RaftConsensus implements Consensus {
 
+    @Override
+    public RequestVoteResult requestVote(RequestVoteArgs args) {
+        return null;
     }
 
-    AppendEntriesResult appendEntries(AppendEntriesArgs args) {
-
+    @Override
+    public AppendEntriesResult appendEntries(AppendEntriesArgs args) {
+        return null;
     }
 }
