@@ -5,6 +5,7 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import raft.nodemodule.Node;
 
 import java.io.IOException;
 
@@ -12,14 +13,16 @@ public class RequestVoteServer {
     private int listenPort;
     private Server server;
     final static Logger logger = LogManager.getLogger(RequestVoteServer.class);
+    private Node nodeHook;
 
-    public RequestVoteServer(int listenPort) {
+    public RequestVoteServer(int listenPort, Node nodeHook) {
         this.listenPort = listenPort;
+        this.nodeHook = nodeHook;
     }
 
     public void start() throws IOException {
         server = ServerBuilder.forPort(this.listenPort)
-                .addService((BindableService) new RequestVoteImpl())
+                .addService((BindableService) new RequestVoteImpl(this.nodeHook))
                 .build()
                 .start();
         logger.info("-------------------- server start, waiting for connection----------------");

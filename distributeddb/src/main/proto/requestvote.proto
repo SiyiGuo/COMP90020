@@ -11,6 +11,7 @@ option java_outer_classname = "RequestVoteProto";
 package raft;
 
 //声明一个服务名称
+//TODO merge append entries?
 service RequestVoteService {
   rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse);
 }
