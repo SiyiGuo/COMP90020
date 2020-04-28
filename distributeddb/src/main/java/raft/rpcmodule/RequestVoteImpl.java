@@ -8,7 +8,11 @@ import raft.rpcmodule.requestvote.RequestVoteServiceGrpc;
 public class RequestVoteImpl extends RequestVoteServiceGrpc.RequestVoteServiceImplBase {
     @Override
     public void requestVote(RequestVoteRequest request, StreamObserver<RequestVoteResponse> responseObserver) {
-        RequestVoteResponse response = RequestVoteResponse.newBuilder().setMessage(("Response Message" + request.getName())).build();
+        RequestVoteResponse response = RequestVoteResponse.newBuilder()
+                .setTerm(request.getTerm())
+                .setVoteGranted(true)
+                .build();
+
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }

@@ -45,11 +45,11 @@ public class Node implements LifeCycle {
 
     }
 
-    public RequestVoteResult handleRequestVote(RequestVoteArgs args) {
+    public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
         return null;
     }
 
-    public AppendEntriesResult handleAppendEntries(AppendEntriesArgs args) {
+    public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
         return null;
     }
 

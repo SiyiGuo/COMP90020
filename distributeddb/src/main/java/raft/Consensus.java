@@ -1,13 +1,13 @@
 package raft;
 
-import raft.consensusmodule.AppendEntriesArgs;
-import raft.consensusmodule.AppendEntriesResult;
-import raft.consensusmodule.RequestVoteArgs;
-import raft.consensusmodule.RequestVoteResult;
+import raft.consensusmodule.RaftAppendEntriesArgs;
+import raft.consensusmodule.RaftAppendEntriesResult;
+import raft.consensusmodule.RaftRequestVoteArgs;
+import raft.consensusmodule.RaftRequestVoteResult;
 
 public interface Consensus {
 
-    RequestVoteResult requestVote(RequestVoteArgs args);
+    RaftRequestVoteResult requestVote(RaftRequestVoteArgs args);
 
-    AppendEntriesResult appendEntries(AppendEntriesArgs args);
+    RaftAppendEntriesResult appendEntries(RaftAppendEntriesArgs args);
 }

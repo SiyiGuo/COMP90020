@@ -2,7 +2,8 @@ package raft.rpcmodule;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import raft.consensusmodule.RequestVoteResult;
+import raft.consensusmodule.RaftRequestVoteArgs;
+import raft.consensusmodule.RaftRequestVoteResult;
 import raft.rpcmodule.requestvote.RequestVoteRequest;
 import raft.rpcmodule.requestvote.RequestVoteResponse;
 import raft.rpcmodule.requestvote.RequestVoteServiceGrpc;
@@ -24,13 +25,18 @@ public class RequestVoteClient {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    public void greet(String name) {
+    public RaftRequestVoteResult requestVote(RaftRequestVoteArgs args) {
         // correspong to name field
-        RequestVoteRequest request = RequestVoteRequest.newBuilder().setName(name).build();
+        RequestVoteRequest request = RequestVoteRequest.newBuilder()
+                .setTerm(args.term)
+                .setCandidateId(args.candidateId)
+                .setLastLogIndex(args.lastLogIndex)
+                .setLastLogTerm(args.lastLogTerm.term)
+                .build();
         // send out the response here
 
         // TODO: blockingStub = no parallel action?
         RequestVoteResponse response = blockingStub.requestVote(request);
-        System.out.println("--------------------"+response.getMessage()+"-----------------");
+        return new RaftRequestVoteResult(response.getTerm(), response.getVoteGranted());
     }
 }
