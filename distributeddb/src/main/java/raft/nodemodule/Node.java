@@ -1,18 +1,14 @@
 package raft.nodemodule;
 
 import raft.LifeCycle;
-import raft.LogModule;
 import raft.consensusmodule.*;
 import raft.logmodule.RaftLogModule;
-import raft.rpcmodule.RaftRpcServer;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
 
 import java.util.ArrayList;
 
 public class Node implements LifeCycle {
-
-    private RaftRpcServer rpcServer;
     private RaftConsensus consensus;
     private RaftLogModule logModule;
     private RaftStateMachine stateMachine;
