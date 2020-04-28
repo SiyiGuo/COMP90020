@@ -39,6 +39,12 @@ public class Node implements LifeCycle {
         this.state = RaftState.FOLLOWER;
     }
 
+    public void election() {
+        currentTerm += 1;
+        this.state = RaftState.CANDIDATE;
+
+    }
+
     public void setConfig() {
 
     }

@@ -15,8 +15,5 @@ public class RaftTest {
     @Test
     public void testInitialElection() {
         int servers = 3;
-        RaftConfig config = new RaftConfig(servers);
-
-
     }
 }
