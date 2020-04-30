@@ -114,4 +114,31 @@ public class Node implements LifeCycle, Runnable{
         this.init();
         this.startNodeRunning();
     }
+
+
+    class ElectionTask implements Runnable {
+        // nested class such that can use Node's private variable
+        @Override
+        public void run() {
+            // look into time stamp
+            if (state  == RaftState.LEADER) {
+                return;
+            }
+
+            long current = System.currentTimeMillis();
+        }
+    }
+
+    class HeartBeatTask implements Runnable {
+        @Override
+        public void run() {
+            if (state != RaftState.LEADER) {
+                // do some thing as loeader
+                return;
+            }
+
+            long current = System.currentTimeMillis();
+        }
+        // nested class so that we can use Node's private variable
+    }
 }
