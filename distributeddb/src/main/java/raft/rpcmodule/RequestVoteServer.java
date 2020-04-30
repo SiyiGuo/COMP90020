@@ -9,7 +9,7 @@ import raft.nodemodule.Node;
 
 import java.io.IOException;
 
-public class RequestVoteServer {
+public class RequestVoteServer implements Runnable{
     private int listenPort;
     private Server server;
     final static Logger logger = LogManager.getLogger(RequestVoteServer.class);
@@ -46,6 +46,16 @@ public class RequestVoteServer {
     public void blockUntilShutdown() throws InterruptedException {
         if (server != null) {
             server.awaitTermination();
+        }
+    }
+
+    public void run() {
+        try {
+            logger.info("------ Start server listen to port {} ------", this.listenPort);
+            this.start();
+            this.blockUntilShutdown();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }

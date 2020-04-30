@@ -13,7 +13,7 @@ import raft.statemachinemodule.RaftStateMachine;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class Node implements LifeCycle {
+public class Node implements LifeCycle, Runnable{
     public final static Logger logger = LogManager.getLogger(Node.class);
 
     private RaftConsensus consensus;
@@ -36,17 +36,23 @@ public class Node implements LifeCycle {
     private ArrayList<Integer> nextIndex;
     private ArrayList<Integer> matchIndex;
 
-    // Peers
-    private ArrayList<RequestVoteClient> peers;
-
     // config for this node
     public final NodeConfig config;
+
+    /*
+    RPC related
+     */
+    private RequestVoteServer rpcServer;
+    // Peers
+    public ArrayList<RequestVoteClient> peers;
+    public int rpcCount;
 
     public Node(NodeConfig config) {
         this.commitIndex = 0;
         this.lastApplied = 0;
         this.state = RaftState.FOLLOWER;
         this.config = config;
+        this.rpcCount = 0;
     }
 
     public void election() {
@@ -75,21 +81,22 @@ public class Node implements LifeCycle {
         return null;
     }
 
+    public void startNodeRunning() {
+        /*
+        Actual initial sequence
+         */
+    }
+
     @Override
     public void init() {
-        Thread serverThread = new Thread(() -> {
-            RequestVoteServer server = new RequestVoteServer(this.config.listenPort,
-                    this);
-            try {
-                logger.info("------ Start server listen to port {} ------", this.config.listenPort);
-                server.start();
-                server.blockUntilShutdown();
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
-        serverThread.start();
+        /*
+        Run the initilization of the server
+         */
+        // run rpc server
+        this.rpcServer = new RequestVoteServer(this.config.listenPort, this);
+        new Thread(this.rpcServer).start();
 
+        // create peer list
         this.peers = new ArrayList<>();
         for(NodeConfig.NodeAddress peer: this.config.peers) {
             this.peers.add(new RequestVoteClient(peer.hostname, peer.port));
@@ -98,6 +105,13 @@ public class Node implements LifeCycle {
 
     @Override
     public void destroy() {
+       this.rpcServer.stop();
+    }
 
+    @Override
+    public void run() {
+        // called by new Thread
+        this.init();
+        this.startNodeRunning();
     }
 }

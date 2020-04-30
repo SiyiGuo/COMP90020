@@ -5,9 +5,15 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import raft.consensusmodule.RaftRequestVoteArgs;
+import raft.logmodule.LogEntry;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeConfig;
+import raft.rpcmodule.RequestVoteClient;
 import raft.statemachinemodule.RaftState;
+
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class RaftTest {
     final static Logger logger = LogManager.getLogger(RaftTest.class);
@@ -17,7 +23,7 @@ public class RaftTest {
         logger.debug("start testing");
     }
     @Test
-    public void testInitialElection() {
+    public void testInitialElection() throws InterruptedException {
         int servers = 3;
         NodeConfig config1 = new NodeConfig(8258,
                 new String[]{"localhost:8259", "localhost:8260"});
@@ -29,19 +35,22 @@ public class RaftTest {
 
         // start nodes
         Node[] nodes = {new Node(config1), new Node(config2), new Node(config3)};
+        Thread[] nodeThreads = {new Thread(nodes[0]), new Thread(nodes[1]), new Thread(nodes[2])};
         for(int i = 0; i < servers; i++) {
-            nodes[i].init();
+            nodeThreads[i].start();
         }
 
         // run some test
         for(int iter = 0; iter < 10; iter++) {
-
             // wait some time
+            int ms = 450+ ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE + 1) % 100;
+            TimeUnit.MILLISECONDS.sleep(ms);
 
+            // check a leader exist
             int numLeader = 0;
             for(Node node: nodes) {
                 if (node.getState().equals(RaftState.LEADER)) {
-                    numLeader += 1;
+                    numLeader = 1;
                 }
             }
             Assert.assertEquals(1, numLeader);
@@ -49,6 +58,7 @@ public class RaftTest {
 
         // destroy
         for(int i = 0; i < servers; i++) {
+            nodeThreads[i].interrupt();
             nodes[i].destroy();
         }
     }
