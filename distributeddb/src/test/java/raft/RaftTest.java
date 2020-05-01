@@ -22,6 +22,13 @@ public class RaftTest {
     public static void beforeClass() {
         logger.debug("start testing");
     }
+
+    @Test
+    public void playGround() {
+        logger.debug(String.valueOf(Runtime.getRuntime().availableProcessors()));
+    }
+
+
     @Test
     public void testInitialElection() throws InterruptedException {
         int servers = 3;
@@ -43,7 +50,7 @@ public class RaftTest {
         // run some test
         for(int iter = 0; iter < 10; iter++) {
             // wait some time
-            int ms = 450+ ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE + 1) % 100;
+            long ms = NodeConfig.HEARTBEAT_INTERVAL_MS+ ThreadLocalRandom.current().nextInt(100);
             TimeUnit.MILLISECONDS.sleep(ms);
 
             // check a leader exist

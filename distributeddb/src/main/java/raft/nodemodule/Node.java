@@ -3,6 +3,7 @@ package raft.nodemodule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
+import raft.concurrentutil.RaftThreadPool;
 import raft.consensusmodule.*;
 import raft.logmodule.RaftLogModule;
 import raft.rpcmodule.RequestVoteClient;
@@ -21,23 +22,32 @@ public class Node implements LifeCycle, Runnable{
     private RaftStateMachine stateMachine;
 
     //state of this node
-    private RaftState state;
+    private volatile RaftState state;
 
     //Persistent state on all servers
-    private long currentTerm;
-    private int votedFor; // candidate IT that received vote in a current term
+    private volatile long currentTerm;
+    private volatile int votedFor; // candidate IT that received vote in a current term
 
     // volatile state on all servers
-    private long commitIndex; //highest log entry known to be commited
-    private long lastApplied;
+    private volatile long commitIndex; //highest log entry known to be commited
+    private volatile long lastApplied;
 
     // volatile state on leaders
     // reinitialized after election
-    private ArrayList<Integer> nextIndex;
-    private ArrayList<Integer> matchIndex;
+    private volatile ArrayList<Integer> nextIndex;
+    private volatile ArrayList<Integer> matchIndex;
 
+    // Task
+    private HeartBeatTask heartBeatTask ;
+    private ElectionTask electionTask = new ElectionTask();
+
+
+    /*
+    Engineering Variables
+     */
     // config for this node
     public final NodeConfig config;
+    private RaftThreadPool threadPool;
 
     /*
     RPC related
@@ -47,12 +57,18 @@ public class Node implements LifeCycle, Runnable{
     public ArrayList<RequestVoteClient> peers;
     public int rpcCount;
 
+    // Other
+    private volatile boolean started;
+
     public Node(NodeConfig config) {
         this.commitIndex = 0;
         this.lastApplied = 0;
         this.state = RaftState.FOLLOWER;
         this.config = config;
         this.rpcCount = 0;
+
+        this.heartBeatTask = new HeartBeatTask();
+        this.electionTask = new ElectionTask();
     }
 
     public void election() {
@@ -81,26 +97,30 @@ public class Node implements LifeCycle, Runnable{
         return null;
     }
 
-    public void startNodeRunning() {
-        /*
-        Actual initial sequence
-         */
-    }
-
     @Override
     public void init() {
+        if (started) return;
+
         /*
         Run the initilization of the server
          */
-        // run rpc server
-        this.rpcServer = new RequestVoteServer(this.config.listenPort, this);
-        new Thread(this.rpcServer).start();
-
         // create peer list
         this.peers = new ArrayList<>();
         for(NodeConfig.NodeAddress peer: this.config.peers) {
             this.peers.add(new RequestVoteClient(peer.hostname, peer.port));
         }
+
+        this.threadPool = new RaftThreadPool();
+    }
+
+    public void startNodeRunning() {
+        /*
+        Actual initial sequence
+         */
+        // run rpc server
+        this.rpcServer = new RequestVoteServer(this.config.listenPort, this);
+        this.threadPool.execute(rpcServer);
+
     }
 
     @Override
@@ -125,7 +145,7 @@ public class Node implements LifeCycle, Runnable{
                 return;
             }
 
-            long current = System.currentTimeMillis();
+            long currentTime = System.currentTimeMillis();
         }
     }
 
@@ -137,7 +157,7 @@ public class Node implements LifeCycle, Runnable{
                 return;
             }
 
-            long current = System.currentTimeMillis();
+            long currentTime = System.currentTimeMillis();
         }
         // nested class so that we can use Node's private variable
     }

@@ -17,9 +17,13 @@ public class NodeConfig {
     public final int listenPort;
     public final ArrayList<NodeAddress> peers;
 
+    // RequestVote config
+    public static final long HEARTBEAT_INTERVAL_MS = (long)450;
+
     public NodeConfig(int listenPort, String[] peers) {
         this.listenPort = listenPort;
         this.peers = new ArrayList<>();
+
 
         for(String peer: peers) {
             String[] parts = peer.split(":");
