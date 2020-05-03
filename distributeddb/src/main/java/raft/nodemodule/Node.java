@@ -3,6 +3,7 @@ package raft.nodemodule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
+import raft.LogModule;
 import raft.concurrentutil.RaftThreadPool;
 import raft.consensusmodule.*;
 import raft.logmodule.RaftLogModule;
@@ -13,20 +14,24 @@ import raft.statemachinemodule.RaftStateMachine;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Node implements LifeCycle, Runnable{
     public final static Logger logger = LogManager.getLogger(Node.class);
 
-    private RaftConsensus consensus;
-    private RaftLogModule logModule;
-    private RaftStateMachine stateMachine;
+    public final int nodeId;
+    private  RaftConsensus consensus;
+    private  RaftLogModule logModule;
+    private  RaftStateMachine stateMachine;
 
     //state of this node
     private volatile RaftState state;
 
     //Persistent state on all servers
     private volatile long currentTerm;
-    private volatile int votedFor; // candidate IT that received vote in a current term
+    private volatile int votedFor; // candidate Id that received vote in a current term
 
     // volatile state on all servers
     private volatile long commitIndex; //highest log entry known to be commited
@@ -37,21 +42,19 @@ public class Node implements LifeCycle, Runnable{
     private volatile ArrayList<Integer> nextIndex;
     private volatile ArrayList<Integer> matchIndex;
 
+    // time variable
+    private volatile long lastHeartBeatTime = 0;
+    private volatile long lastElectionTime = 0;
+
     // Task
     private HeartBeatTask heartBeatTask ;
-    private ElectionTask electionTask = new ElectionTask();
+    private ElectionTask electionTask;
 
-
-    /*
-    Engineering Variables
-     */
+    /* Engineering Variables*/
     // config for this node
     public final NodeConfig config;
-    private RaftThreadPool threadPool;
 
-    /*
-    RPC related
-     */
+    /* RPC related*/
     private RequestVoteServer rpcServer;
     // Peers
     public ArrayList<RequestVoteClient> peers;
@@ -61,6 +64,8 @@ public class Node implements LifeCycle, Runnable{
     private volatile boolean started;
 
     public Node(NodeConfig config) {
+        this.nodeId = config.listenPort;
+
         this.commitIndex = 0;
         this.lastApplied = 0;
         this.state = RaftState.FOLLOWER;
@@ -69,11 +74,6 @@ public class Node implements LifeCycle, Runnable{
 
         this.heartBeatTask = new HeartBeatTask();
         this.electionTask = new ElectionTask();
-    }
-
-    public void election() {
-        currentTerm += 1;
-        this.state = RaftState.CANDIDATE;
     }
 
     public RaftState getState() {
@@ -110,7 +110,6 @@ public class Node implements LifeCycle, Runnable{
             this.peers.add(new RequestVoteClient(peer.hostname, peer.port));
         }
 
-        this.threadPool = new RaftThreadPool();
     }
 
     public void startNodeRunning() {
@@ -119,14 +118,20 @@ public class Node implements LifeCycle, Runnable{
          */
         // run rpc server
         this.rpcServer = new RequestVoteServer(this.config.listenPort, this);
-        this.threadPool.execute(rpcServer);
-        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.HEARTBEAT_INTERVAL_MS);
-        this.threadPool.scheduleAtFixedRate(electionTask, 1000, NodeConfig.HEARTBEAT_INTERVAL_MS);
+        RaftThreadPool.execute(rpcServer);
+        RaftThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+        RaftThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+
+        this.logModule = new RaftLogModule();
+        this.consensus = new RaftConsensus();
+        this.stateMachine = new RaftStateMachine();
     }
 
     @Override
     public void destroy() {
-       this.rpcServer.stop();
+        if (this.rpcServer != null) {
+            this.rpcServer.stop();
+        }
     }
 
     @Override
@@ -135,7 +140,6 @@ public class Node implements LifeCycle, Runnable{
         this.init();
         this.startNodeRunning();
     }
-
 
     class ElectionTask implements Runnable {
         // nested class such that can use Node's private variable
@@ -146,7 +150,37 @@ public class Node implements LifeCycle, Runnable{
                 return;
             }
 
+            // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
+            long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(50);
+            if (currentTime - lastElectionTime < electionTime) {
+                return;
+            }
+
+            /*
+            start election.
+            */
+            logger.info("node {} start election task", nodeId);
+            lastElectionTime = currentTime+ThreadLocalRandom.current().nextLong(200)+150;
+
+            currentTerm += 1; // increments its current term
+            state = RaftState.CANDIDATE; // transition sot candidate state
+            votedFor = nodeId; // vote for itself
+
+
+            //RequestVoteRPC in parallel to other server
+            ArrayList<Future> results = new ArrayList<>();
+            for(RequestVoteClient peer:peers) {
+                results.add(RaftThreadPool.submit(new Callable() {
+                    @Override
+                    public Object call() throws Exception {
+                        logger.info("node {} sned", nodeId);
+                        RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast());
+                        logger.info("node{} arg create", nodeId);
+                        return null;
+                    }
+                }));
+            }
         }
     }
 
@@ -159,6 +193,9 @@ public class Node implements LifeCycle, Runnable{
             }
 
             long currentTime = System.currentTimeMillis();
+            if (currentTime - lastHeartBeatTime < NodeConfig.HEARTBEAT_INTERVAL_MS) {
+                return;
+            }
         }
         // nested class so that we can use Node's private variable
     }

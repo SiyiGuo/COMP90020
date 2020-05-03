@@ -19,7 +19,7 @@ public class RaftLogModule implements LogModule {
 
     @Override
     public LogEntry read(Long index) {
-        return null;
+        return this.logs.get(Math.toIntExact(index));
     }
 
     @Override
@@ -29,11 +29,18 @@ public class RaftLogModule implements LogModule {
 
     @Override
     public LogEntry getLast() {
-        return null;
+//        if (this.logs.size() > 0) {
+//            return this.logs.get(this.logs.size()-1);
+//        }
+        return new LogEntry(-1);
     }
 
     @Override
     public Long getLastIndex() {
-        return null;
+        // index from one
+//        if (this.logs.size() > 0) {
+//            return (long)(this.logs.size()-1);
+//        }
+        return (long)0;
     }
 }

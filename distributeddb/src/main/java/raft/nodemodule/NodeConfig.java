@@ -18,7 +18,9 @@ public class NodeConfig {
     public final ArrayList<NodeAddress> peers;
 
     // RequestVote config
-    public static final long HEARTBEAT_INTERVAL_MS = (long)450;
+    public static final long HEARTBEAT_INTERVAL_MS = (long)5 * 1000;
+    public static final long ELECTION_INTERVAL_MS = (long)15 * 1000;
+    public static final int TASK_DELAY = 500;
 
     public NodeConfig(int listenPort, String[] peers) {
         this.listenPort = listenPort;

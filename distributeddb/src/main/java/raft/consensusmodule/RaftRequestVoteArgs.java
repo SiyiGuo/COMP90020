@@ -12,6 +12,7 @@ public class RaftRequestVoteArgs {
     Proxy instance used by algorithm
      */
     public RaftRequestVoteArgs(long term, int candidateId, long lastLogIndex, LogEntry lastLogTerm) {
+        System.out.println("Create args");
         this.term = term;
         this.candidateId = candidateId;
         this.lastLogIndex = lastLogIndex;
