@@ -53,6 +53,7 @@ public class Node implements LifeCycle, Runnable{
     /* Engineering Variables*/
     // config for this node
     public final NodeConfig config;
+    private RaftThreadPool threadPool;
 
     /* RPC related*/
     private RequestVoteServer rpcServer;
@@ -109,6 +110,7 @@ public class Node implements LifeCycle, Runnable{
         for(NodeConfig.NodeAddress peer: this.config.peers) {
             this.peers.add(new RequestVoteClient(peer.hostname, peer.port));
         }
+        this.threadPool = new RaftThreadPool();
 
     }
 
@@ -118,9 +120,9 @@ public class Node implements LifeCycle, Runnable{
          */
         // run rpc server
         this.rpcServer = new RequestVoteServer(this.config.listenPort, this);
-        RaftThreadPool.execute(rpcServer);
-        RaftThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-        RaftThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+        this.threadPool.execute(rpcServer);
+        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
 
         this.logModule = new RaftLogModule();
         this.consensus = new RaftConsensus();
@@ -171,12 +173,13 @@ public class Node implements LifeCycle, Runnable{
             //RequestVoteRPC in parallel to other server
             ArrayList<Future> results = new ArrayList<>();
             for(RequestVoteClient peer:peers) {
-                results.add(RaftThreadPool.submit(new Callable() {
+                results.add(threadPool.submit(new Callable() {
                     @Override
                     public Object call() throws Exception {
                         logger.info("node {} sned", nodeId);
                         RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast());
                         logger.info("node{} arg create", nodeId);
+                        peer.requestVote(request);
                         return null;
                     }
                 }));

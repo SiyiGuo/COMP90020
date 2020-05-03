@@ -39,8 +39,8 @@ public class RaftTest {
 
 
         // start nodes
-        Node[] nodes = {new Node(config1), new Node(config2)};
-        Thread[] nodeThreads = {new Thread(nodes[0]), new Thread(nodes[1])};
+        Node[] nodes = {new Node(config1), new Node(config2), new Node(config3)};
+        Thread[] nodeThreads = {new Thread(nodes[0]), new Thread(nodes[1]), new Thread(nodes[2])};
         for(int i = 0; i < nodes.length; i++) {
             nodeThreads[i].start();
             int finalI = i;

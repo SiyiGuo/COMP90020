@@ -20,7 +20,8 @@ public class RequestVoteImpl extends RequestVoteServiceGrpc.RequestVoteServiceIm
     @Override
     public void requestVote(RequestVoteRequest request, StreamObserver<RequestVoteResponse> responseObserver) {
         this.nodeHook.rpcCount += 1;
-        logger.error("***{} sending back", this.nodeHook.config.listenPort);
+        logger.error("***{} sending back", this.nodeHook.nodeId);
+        logger.error("{} received election request from node{}", this.nodeHook.nodeId, request.getCandidateId());
         RequestVoteResponse response = RequestVoteResponse.newBuilder()
                 .setTerm(request.getTerm())
                 .setVoteGranted(true)
