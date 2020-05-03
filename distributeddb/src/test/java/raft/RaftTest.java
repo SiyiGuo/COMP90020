@@ -45,6 +45,11 @@ public class RaftTest {
         Thread[] nodeThreads = {new Thread(nodes[0]), new Thread(nodes[1]), new Thread(nodes[2])};
         for(int i = 0; i < servers; i++) {
             nodeThreads[i].start();
+            int finalI = i;
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                nodeThreads[finalI].interrupt();
+                nodes[finalI].destroy();
+            }));
         }
 
         // run some test

@@ -9,7 +9,7 @@ import raft.rpcmodule.requestvote.RequestVoteResponse;
 import raft.rpcmodule.requestvote.RequestVoteServiceGrpc;
 
 public class RequestVoteImpl extends RequestVoteServiceGrpc.RequestVoteServiceImplBase {
-    private Node nodeHook;
+    private volatile Node nodeHook;
     private final Logger logger = LogManager.getLogger(RequestVoteImpl.class);
 
     public RequestVoteImpl(Node nodehook) {

@@ -120,7 +120,8 @@ public class Node implements LifeCycle, Runnable{
         // run rpc server
         this.rpcServer = new RequestVoteServer(this.config.listenPort, this);
         this.threadPool.execute(rpcServer);
-
+        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.HEARTBEAT_INTERVAL_MS);
+        this.threadPool.scheduleAtFixedRate(electionTask, 1000, NodeConfig.HEARTBEAT_INTERVAL_MS);
     }
 
     @Override
