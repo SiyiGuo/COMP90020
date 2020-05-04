@@ -3,16 +3,14 @@ package raft.nodemodule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
-import raft.LogModule;
 import raft.concurrentutil.RaftThreadPool;
 import raft.consensusmodule.*;
 import raft.logmodule.RaftLogModule;
-import raft.rpcmodule.RequestVoteClient;
-import raft.rpcmodule.RequestVoteServer;
+import raft.rpcmodule.RaftRpcClient;
+import raft.rpcmodule.RaftRpcServer;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -56,9 +54,9 @@ public class Node implements LifeCycle, Runnable{
     private RaftThreadPool threadPool;
 
     /* RPC related*/
-    private RequestVoteServer rpcServer;
+    private RaftRpcServer rpcServer;
     // Peers
-    public ArrayList<RequestVoteClient> peers;
+    public ArrayList<RaftRpcClient> peers;
     public int rpcCount;
 
     // Other
@@ -111,7 +109,7 @@ public class Node implements LifeCycle, Runnable{
         // create peer list
         this.peers = new ArrayList<>();
         for(NodeConfig.NodeAddress peer: this.config.peers) {
-            this.peers.add(new RequestVoteClient(peer.hostname, peer.port));
+            this.peers.add(new RaftRpcClient(peer.hostname, peer.port));
         }
         this.threadPool = new RaftThreadPool(this.nodeId);
 
@@ -122,7 +120,7 @@ public class Node implements LifeCycle, Runnable{
         Actual initial sequence
          */
         // run rpc server
-        this.rpcServer = new RequestVoteServer(this.config.listenPort, this);
+        this.rpcServer = new RaftRpcServer(this.config.listenPort, this);
         this.threadPool.execute(rpcServer);
         this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
         this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
@@ -175,7 +173,7 @@ public class Node implements LifeCycle, Runnable{
 
             //RequestVoteRPC in parallel to other server
             ArrayList<Future> results = new ArrayList<>();
-            for(RequestVoteClient peer:peers) {
+            for(RaftRpcClient peer:peers) {
                 results.add(threadPool.submit(new Callable() {
                     @Override
                     public Object call() throws Exception {

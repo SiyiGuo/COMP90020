@@ -13,7 +13,7 @@ public class RequestVoteRpcTest {
     @Test
     public void testCommunication() {
         Thread servcerThread = new Thread(() -> {
-            RequestVoteServer server = new RequestVoteServer(8237, null);
+            RaftRpcServer server = new RaftRpcServer(8237, null);
             try {
                 System.out.println("Start server");
                 server.start();
@@ -25,7 +25,7 @@ public class RequestVoteRpcTest {
         });
         servcerThread.start();
 
-        RequestVoteClient client = new RequestVoteClient("localhost", 8237);
+        RaftRpcClient client = new RaftRpcClient("localhost", 8237);
         ArrayList<RaftRequestVoteResult> responses = new ArrayList<>();
         int numRequest = 10;
         for (int i = 0; i < numRequest; i++) {

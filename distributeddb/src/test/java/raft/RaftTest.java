@@ -2,14 +2,10 @@ package raft;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import raft.consensusmodule.RaftRequestVoteArgs;
-import raft.logmodule.LogEntry;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeConfig;
-import raft.rpcmodule.RequestVoteClient;
 import raft.statemachinemodule.RaftState;
 
 import java.util.concurrent.ThreadLocalRandom;

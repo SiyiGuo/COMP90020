@@ -7,15 +7,12 @@ import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.LogEntry;
 import raft.nodemodule.Node;
-import raft.rpcmodule.requestvote.RequestVoteRequest;
-import raft.rpcmodule.requestvote.RequestVoteResponse;
-import raft.rpcmodule.requestvote.RequestVoteServiceGrpc;
 
-public class RequestVoteImpl extends RequestVoteServiceGrpc.RequestVoteServiceImplBase {
+public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase {
     private volatile Node nodeHook;
-    private final Logger logger = LogManager.getLogger(RequestVoteImpl.class);
+    private final Logger logger = LogManager.getLogger(RaftRpcServerImpl.class);
 
-    public RequestVoteImpl(Node nodehook) {
+    public RaftRpcServerImpl(Node nodehook) {
         super();
         this.nodeHook = nodehook;
     }

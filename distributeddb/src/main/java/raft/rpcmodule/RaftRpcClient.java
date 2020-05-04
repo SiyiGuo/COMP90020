@@ -6,22 +6,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
-import raft.rpcmodule.requestvote.RequestVoteRequest;
-import raft.rpcmodule.requestvote.RequestVoteResponse;
-import raft.rpcmodule.requestvote.RequestVoteServiceGrpc;
 
 import java.util.concurrent.TimeUnit;
 
-public class RequestVoteClient {
+public class RaftRpcClient {
     private final ManagedChannel channel;
-    private final RequestVoteServiceGrpc.RequestVoteServiceBlockingStub blockingStub;
-    private final Logger logger = LogManager.getLogger(RequestVoteClient.class);
+    private final RaftRpcServiceGrpc.RaftRpcServiceBlockingStub blockingStub;
+    private final Logger logger = LogManager.getLogger(RaftRpcClient.class);
 
-    public RequestVoteClient(String host, int hostPort) {
+    public RaftRpcClient(String host, int hostPort) {
         channel = ManagedChannelBuilder.forAddress(host, hostPort)
                 .usePlaintext()
                 .build();
-        blockingStub = RequestVoteServiceGrpc.newBlockingStub(channel);
+        blockingStub = RaftRpcServiceGrpc.newBlockingStub(channel);
     }
 
     public void shutdown() throws InterruptedException {
