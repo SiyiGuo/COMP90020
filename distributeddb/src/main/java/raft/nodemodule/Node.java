@@ -82,7 +82,10 @@ public class Node implements LifeCycle, Runnable{
     }
 
     public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
-        return null;
+        return new RaftRequestVoteResult(
+                this.currentTerm,
+                false
+        );
     }
 
     public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
@@ -110,7 +113,7 @@ public class Node implements LifeCycle, Runnable{
         for(NodeConfig.NodeAddress peer: this.config.peers) {
             this.peers.add(new RequestVoteClient(peer.hostname, peer.port));
         }
-        this.threadPool = new RaftThreadPool();
+        this.threadPool = new RaftThreadPool(this.nodeId);
 
     }
 
@@ -176,11 +179,8 @@ public class Node implements LifeCycle, Runnable{
                 results.add(threadPool.submit(new Callable() {
                     @Override
                     public Object call() throws Exception {
-                        logger.info("node {} sned", nodeId);
                         RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast());
-                        logger.info("node{} arg create", nodeId);
-                        peer.requestVote(request);
-                        return null;
+                        return peer.requestVote(request);
                     }
                 }));
             }

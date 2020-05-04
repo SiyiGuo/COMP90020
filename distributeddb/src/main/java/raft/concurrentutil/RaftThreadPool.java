@@ -24,6 +24,11 @@ public class RaftThreadPool {
 
     private  ScheduledExecutorService ss = getScheduled();
     private  ThreadPoolExecutor te = getThreadPool();
+    private int nodeId;
+
+    public RaftThreadPool(int nodeId) {
+        this.nodeId = nodeId;
+    }
 
     private  ThreadPoolExecutor getThreadPool() {
         return new RaftThreadPoolExecutor(
@@ -70,7 +75,7 @@ public class RaftThreadPool {
 
         @Override
         public Thread newThread(Runnable r) {
-            Thread t = new RaftThread("Raft thread ", r);
+            Thread t = new RaftThread("Raft thread "+nodeId, r);
             t.setDaemon(true);
             t.setPriority(5);
             return t;
