@@ -74,30 +74,6 @@ public class Node implements LifeCycle, Runnable{
         this.electionTask = new ElectionTask();
     }
 
-    public RaftState getState() {
-        return this.state;
-    }
-
-    public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
-        return new RaftRequestVoteResult(
-                this.currentTerm,
-                false
-        );
-    }
-
-    public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
-        return null;
-    }
-
-    public ClientResponse handleClientRequest(ClientRequest req) {
-        return null;
-    }
-
-    // redirect to leader
-    public ClientResponse redirect(ClientRequest req) {
-        return null;
-    }
-
     @Override
     public void init() {
         if (started) return;
@@ -142,6 +118,30 @@ public class Node implements LifeCycle, Runnable{
         // called by new Thread
         this.init();
         this.startNodeRunning();
+    }
+
+    public RaftState getState() {
+        return this.state;
+    }
+
+    public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
+        return new RaftRequestVoteResult(
+                this.currentTerm,
+                false
+        );
+    }
+
+    public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
+        return null;
+    }
+
+    public ClientResponse handleClientRequest(ClientRequest req) {
+        return null;
+    }
+
+    // redirect to leader
+    public ClientResponse redirect(ClientRequest req) {
+        return null;
     }
 
     class ElectionTask implements Runnable {
