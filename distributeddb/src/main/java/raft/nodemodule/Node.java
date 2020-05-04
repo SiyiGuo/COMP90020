@@ -12,9 +12,8 @@ import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
 
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Node implements LifeCycle, Runnable{
     public final static Logger logger = LogManager.getLogger(Node.class);
@@ -125,6 +124,7 @@ public class Node implements LifeCycle, Runnable{
         this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
         this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
 
+        // start 3 module
         this.logModule = new RaftLogModule();
         this.consensus = new RaftConsensus();
         this.stateMachine = new RaftStateMachine();
@@ -149,19 +149,15 @@ public class Node implements LifeCycle, Runnable{
         @Override
         public void run() {
             // look into time stamp
-            if (state  == RaftState.LEADER) {
-                return;
-            }
+            if (state  == RaftState.LEADER) return;
 
             // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
             long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(50);
-            if (currentTime - lastElectionTime < electionTime) {
-                return;
-            }
+            if (currentTime - lastElectionTime < electionTime) return;
 
             /*
-            start election.
+           start election.
             */
             logger.info("node {} start election task", nodeId);
             lastElectionTime = currentTime+ThreadLocalRandom.current().nextLong(200)+150;
@@ -170,18 +166,59 @@ public class Node implements LifeCycle, Runnable{
             state = RaftState.CANDIDATE; // transition sot candidate state
             votedFor = nodeId; // vote for itself
 
-
-            //RequestVoteRPC in parallel to other server
+            //RequestVoteRPC in parallel to other peers
             ArrayList<Future> results = new ArrayList<>();
             for(RaftRpcClient peer:peers) {
-                results.add(threadPool.submit(new Callable() {
-                    @Override
-                    public Object call() throws Exception {
-                        RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast());
-                        return peer.requestVote(request);
-                    }
+                results.add(threadPool.submit(() -> {
+                    RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast());
+                    return peer.requestVote(request);
                 }));
             }
+
+            // receive RequestVoteRpc Result
+            AtomicInteger receivedVote = new AtomicInteger(0);
+            CountDownLatch countDown = new CountDownLatch(results.size());
+            for(Future peerResult: results) {
+                threadPool.submit(()->{
+                    try{
+                        // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
+                        if (state == RaftState.FOLLOWER) return -1;
+                        RaftRequestVoteResult result = (RaftRequestVoteResult)peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, TimeUnit.MILLISECONDS);
+                        if (result == null) {
+                            return -1;
+                        }
+
+                        if (result.voteGranted) {
+                            // count vote here
+                            receivedVote.incrementAndGet();
+                        } else {
+                            // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
+                            if (result.term > currentTerm) {
+                                currentTerm = result.term;
+                                state = RaftState.FOLLOWER;
+                            }
+                        }
+                        return 0;
+                    } catch (Exception e) {
+                      logger.error("Recieve Request Vote result fail, error: ", e);
+                      return -1;
+                    } finally {
+                        countDown.countDown();
+                    }
+                });
+            }
+
+            // All servers: if RPC request or response contains term T > currentTerm, set currentTerm and convert to candidate.
+            if (state == RaftState.FOLLOWER) return;
+
+            // Candidate: if votes received from majority of servers, become leader
+            if (receivedVote.get() > (peers.size() / 2)) {
+                // 3 / 2 = 1, > 1 means 2, 3
+                // 4 / 2 = 2, > 2 mean not majority
+                state = RaftState.LEADER;
+            }
+
+            // Candidate: if election timeout elapses: start new election
         }
     }
 
