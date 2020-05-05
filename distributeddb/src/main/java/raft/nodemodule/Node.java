@@ -179,7 +179,7 @@ public class Node implements LifeCycle, Runnable{
             /*
            start election.
             */
-            logger.info("node {} start election task currentTime {} electionTime {} lastElectionTime {} since last election {}", nodeId, currentTime, electionTime, lastElectionTime, currentTime - lastElectionTime);
+            logger.info("node {} start election task currentTime {} electionTime {} lastElectionTime {} since last election {}", nodeId, currentTime, electionTime, lastElectionTime);
             lastElectionTime = currentTime+ThreadLocalRandom.current().nextLong(200)+150;
 
             currentTerm += 1; // increments its current term
