@@ -127,6 +127,8 @@ public class Node implements LifeCycle, Runnable{
 
     public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
         logger.info("Node: {} receive election request: {} currentTerm {} votedFor {}", this.nodeId, args, currentTerm, votedFor);
+
+        // TODO: let consensus handle this
         if (args.term < this.currentTerm) {
             return new RaftRequestVoteResult(
                     this.currentTerm,
@@ -135,6 +137,7 @@ public class Node implements LifeCycle, Runnable{
         }
 
         if (votedFor == NULL_VOTE || votedFor == args.candidateId) {
+            // TODO: and candidates's log is at least as up-to-date as receiver's log. grant vote
             this.state = RaftState.FOLLOWER;
             this.votedFor = args.candidateId;
             this.currentTerm = args.term;
@@ -170,14 +173,11 @@ public class Node implements LifeCycle, Runnable{
             // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
             long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(50);
-            if (currentTime - lastElectionTime < electionTime) {
-                return;
-            }
+            if (currentTime - lastElectionTime < electionTime) return;
 
             /*
            start election.
             */
-//            logger.info("node {} start election task currentTime {} electionTime {} lastElectionTime {} since last election {}", nodeId, currentTime, electionTime, lastElectionTime);
             lastElectionTime = currentTime+ThreadLocalRandom.current().nextLong(200)+150;
 
             currentTerm += 1; // increments its current term
@@ -211,15 +211,16 @@ public class Node implements LifeCycle, Runnable{
                             return -1;
                         }
 
+                        // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
+                        if (result.term > currentTerm) {
+                            currentTerm = result.term;
+                            state = RaftState.FOLLOWER;
+                            return 0;
+                        }
+
+                        // collect vote result
                         if (result.voteGranted) {
-                            // count vote here
                             receivedVote.incrementAndGet();
-                            System.out.println("election received vote1 " + receivedVote.intValue());
-                        } else {
-                            // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
-                            if (result.term > currentTerm) {
-                                currentTerm = result.term;
-                            }
                         }
                         return 0;
                     } catch (Exception e) {
@@ -238,7 +239,7 @@ public class Node implements LifeCycle, Runnable{
                 logger.warn("Node {} election task interrupted", nodeId);
             }
 
-            // All servers: if RPC request or response contains term T > currentTerm, set currentTerm and convert to candidate.
+            // All servers: if RPC request or response contains term T > currentTerm, set currentTerm and convert to follower.
             if (state == RaftState.FOLLOWER) {
                 return;
             }
@@ -248,6 +249,7 @@ public class Node implements LifeCycle, Runnable{
             // include myself, this is the majority vote
             if (receivedVote.intValue() >= (peers.size() / 2)) {
                 state = RaftState.LEADER;
+                //TODO: do something as leader
             }
 
             // Candidate: if election timeout elapses: start new election
@@ -259,7 +261,7 @@ public class Node implements LifeCycle, Runnable{
         @Override
         public void run() {
             if (state != RaftState.LEADER) {
-                // do some thing as loeader
+                // do some thing as leader
                 return;
             }
 
