@@ -137,6 +137,9 @@ public class Node implements LifeCycle, Runnable{
         }
 
         if (votedFor == NULL_VOTE || votedFor == args.candidateId) {
+            this.state = RaftState.FOLLOWER;
+            this.votedFor = args.candidateId;
+            this.currentTerm = args.term;
             return new RaftRequestVoteResult(
                     this.currentTerm,
                     true
@@ -168,7 +171,7 @@ public class Node implements LifeCycle, Runnable{
 
             // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
-            long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(350, 500);
+            long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(50);
             if (currentTime - lastElectionTime < electionTime) return;
 
             /*
@@ -238,7 +241,6 @@ public class Node implements LifeCycle, Runnable{
 
             // All servers: if RPC request or response contains term T > currentTerm, set currentTerm and convert to candidate.
             if (state == RaftState.FOLLOWER) {
-                votedFor = NULL_VOTE;
                 return;
             }
 
