@@ -173,14 +173,13 @@ public class Node implements LifeCycle, Runnable{
             long currentTime = System.currentTimeMillis();
             long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(50);
             if (currentTime - lastElectionTime < electionTime) {
-                logger.info("node {} not yet: currentTIme {} electionTime {} lastElectionTime{}", nodeId, currentTime, electionTime, lastElectionTime);
                 return;
             }
 
             /*
            start election.
             */
-            logger.info("node {} start election task currentTime {} electionTime {} lastElectionTime {}", nodeId, currentTime, electionTime, lastElectionTime);
+            logger.info("node {} start election task currentTime {} electionTime {} lastElectionTime {} since last election {}", nodeId, currentTime, electionTime, lastElectionTime, currentTime - lastElectionTime);
             lastElectionTime = currentTime+ThreadLocalRandom.current().nextLong(200)+150;
 
             currentTerm += 1; // increments its current term

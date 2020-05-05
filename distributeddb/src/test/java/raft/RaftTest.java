@@ -2,6 +2,7 @@ package raft;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import raft.nodemodule.Node;
@@ -49,16 +50,16 @@ public class RaftTest {
             // wait some time
             long ms = NodeConfig.ELECTION_INTERVAL_MS+ ThreadLocalRandom.current().nextInt(100);
             TimeUnit.MILLISECONDS.sleep(ms);
-
-            // check a leader exist
-            int numLeader = 0;
-            for(Node node: nodes) {
-                if (node.getState().equals(RaftState.LEADER)) {
-                    numLeader = 1;
-                }
-            }
-            System.out.println(String.format("*** term:%s has leader:%s", iter, numLeader));
         }
+
+        // check a leader exist
+        int numLeader = 0;
+        for(Node node: nodes) {
+            if (node.getState().equals(RaftState.LEADER)) {
+                numLeader = 1;
+            }
+        }
+        Assert.assertEquals(1, numLeader);
 
         // destroy
         for(int i = 0; i < nodes.length; i++) {
