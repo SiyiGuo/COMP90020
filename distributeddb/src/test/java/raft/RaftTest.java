@@ -46,7 +46,7 @@ public class RaftTest {
         }
 
         // run some test
-        for(int iter = 0; iter < 10; iter++) {
+        for(int iter = 0; iter < 2; iter++) {
             // wait some time
             long ms = NodeConfig.ELECTION_INTERVAL_MS+ ThreadLocalRandom.current().nextInt(100);
             TimeUnit.MILLISECONDS.sleep(ms);

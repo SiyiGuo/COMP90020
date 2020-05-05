@@ -89,8 +89,6 @@ public class Node implements LifeCycle, Runnable{
         for(NodeConfig.NodeAddress peer: this.config.peers) {
             this.peers.add(new RaftRpcClient(peer.hostname, peer.port));
         }
-        this.threadPool = new RaftThreadPool(this.nodeId);
-
     }
 
     public void startNodeRunning() {
@@ -99,9 +97,9 @@ public class Node implements LifeCycle, Runnable{
          */
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.config.listenPort, this);
-        this.threadPool.execute(rpcServer);
-        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+        RaftThreadPool.execute(rpcServer);
+        RaftThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+        RaftThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
 
         // start 3 module
         this.logModule = new RaftLogModule();
@@ -179,7 +177,7 @@ public class Node implements LifeCycle, Runnable{
             /*
            start election.
             */
-            logger.info("node {} start election task currentTime {} electionTime {} lastElectionTime {} since last election {}", nodeId, currentTime, electionTime, lastElectionTime);
+//            logger.info("node {} start election task currentTime {} electionTime {} lastElectionTime {} since last election {}", nodeId, currentTime, electionTime, lastElectionTime);
             lastElectionTime = currentTime+ThreadLocalRandom.current().nextLong(200)+150;
 
             currentTerm += 1; // increments its current term

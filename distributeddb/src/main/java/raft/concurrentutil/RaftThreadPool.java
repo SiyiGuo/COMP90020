@@ -8,21 +8,16 @@ import java.util.concurrent.*;
  */
 public class RaftThreadPool {
 
-    private final int queueSize = 1024;
-    private final long keepTime = 1000 * 60;
-    private int cup = Runtime.getRuntime().availableProcessors();
-    private int maxPoolSize = cup * 2;
-    private TimeUnit keepTimeUnit = TimeUnit.MILLISECONDS;
+    private static int cup = Runtime.getRuntime().availableProcessors();
+    private static int maxPoolSize = cup * 2;
+    private static final int queueSize = 1024;
+    private static final long keepTime = 1000 * 60;
+    private static TimeUnit keepTimeUnit = TimeUnit.MILLISECONDS;
 
-    private ScheduledExecutorService ss = getScheduled();
-    private ThreadPoolExecutor te = getThreadPool();
-    private int nodeId;
+    private static ScheduledExecutorService ss = getScheduled();
+    private static ThreadPoolExecutor te = getThreadPool();
 
-    public RaftThreadPool(int nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    private ThreadPoolExecutor getThreadPool() {
+    private static ThreadPoolExecutor getThreadPool() {
         return new RaftThreadPoolExecutor(
                 cup,
                 maxPoolSize,
@@ -32,30 +27,30 @@ public class RaftThreadPool {
                 new NameThreadFactory());
     }
 
-    private ScheduledExecutorService getScheduled() {
+    private static ScheduledExecutorService getScheduled() {
         return new ScheduledThreadPoolExecutor(cup, new NameThreadFactory());
     }
 
 
-    public void scheduleAtFixedRate(Runnable r, long initDelay, long delay) {
+    public static void scheduleAtFixedRate(Runnable r, long initDelay, long delay) {
         ss.scheduleAtFixedRate(r, initDelay, delay, TimeUnit.MILLISECONDS);
     }
 
 
-    public void scheduleWithFixedDelay(Runnable r, long delay) {
+    public static void scheduleWithFixedDelay(Runnable r, long delay) {
         ss.scheduleWithFixedDelay(r, 0, delay, TimeUnit.MILLISECONDS);
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Future<T> submit(Callable r) {
+    public static <T> Future<T> submit(Callable r) {
         return te.submit(r);
     }
 
-    public void execute(Runnable r) {
+    public static void execute(Runnable r) {
         te.execute(r);
     }
 
-    public void execute(Runnable r, boolean sync) {
+    public static void execute(Runnable r, boolean sync) {
         if (sync) {
             r.run();
         } else {
@@ -63,11 +58,11 @@ public class RaftThreadPool {
         }
     }
 
-    class NameThreadFactory implements ThreadFactory {
+    static class NameThreadFactory implements ThreadFactory {
 
         @Override
         public Thread newThread(Runnable r) {
-            Thread t = new RaftThread("Raft thread " + nodeId, r);
+            Thread t = new RaftThread("Raft thread", r);
             t.setDaemon(true);
             t.setPriority(5);
             return t;
