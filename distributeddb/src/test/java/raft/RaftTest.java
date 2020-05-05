@@ -10,6 +10,7 @@ import raft.statemachinemodule.RaftState;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 public class RaftTest {
     final static Logger logger = LogManager.getLogger(RaftTest.class);
@@ -17,6 +18,7 @@ public class RaftTest {
     @BeforeClass
     public static void beforeClass() {
         logger.debug("start testing");
+        java.util.logging.Logger.getLogger("io.grpc.netty.shaded.io.grpc.netty.NettyClientHandler").setLevel(Level.OFF);
     }
 
     @Test
@@ -45,7 +47,7 @@ public class RaftTest {
         // run some test
         for(int iter = 0; iter < 10; iter++) {
             // wait some time
-            long ms = NodeConfig.HEARTBEAT_INTERVAL_MS+ ThreadLocalRandom.current().nextInt(100);
+            long ms = NodeConfig.ELECTION_INTERVAL_MS+ ThreadLocalRandom.current().nextInt(100);
             TimeUnit.MILLISECONDS.sleep(ms);
 
             // check a leader exist
@@ -55,7 +57,7 @@ public class RaftTest {
                     numLeader = 1;
                 }
             }
-//            Assert.assertEquals(1, numLeader);
+            System.out.println(String.format("*** term:%s has leader:%s", iter, numLeader));
         }
 
         // destroy

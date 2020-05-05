@@ -20,8 +20,6 @@ public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase
     @Override
     public void requestVote(RequestVoteRequest request, StreamObserver<RequestVoteResponse> responseObserver) {
         this.nodeHook.rpcCount += 1;
-        logger.error("{} received election request from node{}", this.nodeHook.nodeId, request.getCandidateId());
-
         RaftRequestVoteResult result = this.nodeHook.handleRequestVote(new RaftRequestVoteArgs(
                 request.getTerm(),
                 request.getCandidateId(),

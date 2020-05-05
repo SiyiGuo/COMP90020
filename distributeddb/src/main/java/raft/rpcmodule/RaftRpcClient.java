@@ -31,7 +31,6 @@ public class RaftRpcClient {
 
     public RaftRequestVoteResult requestVote(RaftRequestVoteArgs args) {
         // correspong to name field
-        logger.error("asdasdsa");
         RequestVoteRequest request = RequestVoteRequest.newBuilder()
                 .setTerm(args.term)
                 .setCandidateId(args.candidateId)
@@ -40,7 +39,6 @@ public class RaftRpcClient {
                 .build();
         // send out the response here
 
-        logger.error("request voite sending info");
         // TODO: blockingStub = no parallel action?
         RequestVoteResponse response = blockingStub.requestVote(request);
         return new RaftRequestVoteResult(response.getTerm(), response.getVoteGranted());

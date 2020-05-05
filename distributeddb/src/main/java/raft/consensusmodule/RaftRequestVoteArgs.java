@@ -17,4 +17,10 @@ public class RaftRequestVoteArgs {
         this.lastLogIndex = lastLogIndex;
         this.lastLogTerm = lastLogTerm;
     }
+
+    @Override
+    public String toString() {
+        return String.format("RequestVoteArgs term: %s, candidatesId:%s lastLogIndex:%s, lastLogTerm:%s",
+                this.term, this.candidateId, this.lastLogIndex, this.lastLogTerm);
+    }
 }

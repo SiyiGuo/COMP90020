@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class Node implements LifeCycle, Runnable{
     public final static Logger logger = LogManager.getLogger(Node.class);
 
@@ -28,7 +30,8 @@ public class Node implements LifeCycle, Runnable{
 
     //Persistent state on all servers
     private volatile long currentTerm;
-    private volatile int votedFor; // candidate Id that received vote in a current term
+    public final static int NULL_VOTE = -1;
+    private volatile int votedFor = NULL_VOTE; // candidate Id that received vote in a current term
 
     // volatile state on all servers
     private volatile long commitIndex; //highest log entry known to be commited
@@ -125,10 +128,22 @@ public class Node implements LifeCycle, Runnable{
     }
 
     public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
-        return new RaftRequestVoteResult(
-                this.currentTerm,
-                false
-        );
+        logger.info("Node: {} receive election request: {} currentTerm {} votedFor {}", this.nodeId, args, currentTerm, votedFor);
+        if (args.term < this.currentTerm) {
+            return new RaftRequestVoteResult(
+                    this.currentTerm,
+                    false
+            );
+        }
+
+        if (votedFor == NULL_VOTE || votedFor == args.candidateId) {
+            return new RaftRequestVoteResult(
+                    this.currentTerm,
+                    true
+            );
+        }
+
+        return new RaftRequestVoteResult(this.currentTerm, false);
     }
 
     public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
@@ -153,7 +168,7 @@ public class Node implements LifeCycle, Runnable{
 
             // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
-            long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(50);
+            long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(350, 500);
             if (currentTime - lastElectionTime < electionTime) return;
 
             /*
@@ -170,8 +185,12 @@ public class Node implements LifeCycle, Runnable{
             ArrayList<Future> results = new ArrayList<>();
             for(RaftRpcClient peer:peers) {
                 results.add(threadPool.submit(() -> {
-                    RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast());
-                    return peer.requestVote(request);
+                    try {
+                        RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast());
+                        return peer.requestVote(request);
+                    } catch(Exception e) {
+                        return null;
+                    }
                 }));
             }
 
@@ -183,7 +202,8 @@ public class Node implements LifeCycle, Runnable{
                     try{
                         // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
                         if (state == RaftState.FOLLOWER) return -1;
-                        RaftRequestVoteResult result = (RaftRequestVoteResult)peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, TimeUnit.MILLISECONDS);
+                        RaftRequestVoteResult result = (RaftRequestVoteResult)peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, MILLISECONDS);
+                        logger.info("election task received result: term {} voteGranted {}", result.term, result.voteGranted);
                         if (result == null) {
                             return -1;
                         }
@@ -191,6 +211,7 @@ public class Node implements LifeCycle, Runnable{
                         if (result.voteGranted) {
                             // count vote here
                             receivedVote.incrementAndGet();
+                            System.out.println("election received vote1 " + receivedVote.intValue());
                         } else {
                             // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
                             if (result.term > currentTerm) {
@@ -208,17 +229,29 @@ public class Node implements LifeCycle, Runnable{
                 });
             }
 
+            try {
+                // wait for the async result came back
+                countDown.await(NodeConfig.RPC_RESULT_WAIT_TIME+500, MILLISECONDS);
+            } catch (InterruptedException e) {
+                logger.info("Node {} election task interrupted", nodeId);
+            }
+
             // All servers: if RPC request or response contains term T > currentTerm, set currentTerm and convert to candidate.
-            if (state == RaftState.FOLLOWER) return;
+            if (state == RaftState.FOLLOWER) {
+                votedFor = NULL_VOTE;
+                return;
+            }
 
             // Candidate: if votes received from majority of servers, become leader
-            if (receivedVote.get() > (peers.size() / 2)) {
+            System.out.println("election received vote " + receivedVote.intValue());
+            if (receivedVote.intValue() > (peers.size() / 2)) {
                 // 3 / 2 = 1, > 1 means 2, 3
                 // 4 / 2 = 2, > 2 mean not majority
                 state = RaftState.LEADER;
             }
 
             // Candidate: if election timeout elapses: start new election
+            votedFor = NULL_VOTE;
         }
     }
 
