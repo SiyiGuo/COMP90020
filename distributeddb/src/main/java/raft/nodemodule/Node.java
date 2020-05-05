@@ -172,12 +172,15 @@ public class Node implements LifeCycle, Runnable{
             // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
             long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(50);
-            if (currentTime - lastElectionTime < electionTime) return;
+            if (currentTime - lastElectionTime < electionTime) {
+                logger.info("node {} not yet: currentTIme {} electionTime {} lastElectionTime{}", nodeId, currentTime, electionTime, lastElectionTime);
+                return;
+            }
 
             /*
            start election.
             */
-            logger.info("node {} start election task", nodeId);
+            logger.info("node {} start election task currentTime {} electionTime {} lastElectionTime {}", nodeId, currentTime, electionTime, lastElectionTime);
             lastElectionTime = currentTime+ThreadLocalRandom.current().nextLong(200)+150;
 
             currentTerm += 1; // increments its current term
@@ -219,7 +222,6 @@ public class Node implements LifeCycle, Runnable{
                             // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
                             if (result.term > currentTerm) {
                                 currentTerm = result.term;
-                                state = RaftState.FOLLOWER;
                             }
                         }
                         return 0;
@@ -236,7 +238,7 @@ public class Node implements LifeCycle, Runnable{
                 // wait for the async result came back
                 countDown.await(NodeConfig.RPC_RESULT_WAIT_TIME+500, MILLISECONDS);
             } catch (InterruptedException e) {
-                logger.info("Node {} election task interrupted", nodeId);
+                logger.warn("Node {} election task interrupted", nodeId);
             }
 
             // All servers: if RPC request or response contains term T > currentTerm, set currentTerm and convert to candidate.
@@ -246,9 +248,8 @@ public class Node implements LifeCycle, Runnable{
 
             // Candidate: if votes received from majority of servers, become leader
             System.out.println("election received vote " + receivedVote.intValue());
-            if (receivedVote.intValue() > (peers.size() / 2)) {
-                // 3 / 2 = 1, > 1 means 2, 3
-                // 4 / 2 = 2, > 2 mean not majority
+            // include myself, this is the majority vote
+            if (receivedVote.intValue() >= (peers.size() / 2)) {
                 state = RaftState.LEADER;
             }
 
