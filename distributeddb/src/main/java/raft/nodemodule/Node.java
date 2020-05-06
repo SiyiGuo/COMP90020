@@ -45,6 +45,7 @@ public class Node implements LifeCycle, Runnable{
     // time variable
     private volatile long lastHeartBeatTime = 0;
     private volatile long lastElectionTime = 0;
+    private volatile long timeOut = 0;
 
     // Task
     private HeartBeatTask heartBeatTask ;
@@ -172,13 +173,13 @@ public class Node implements LifeCycle, Runnable{
 
             // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
-            long electionTime = NodeConfig.ELECTION_INTERVAL_MS + ThreadLocalRandom.current().nextLong(50);
-            if (currentTime - lastElectionTime < electionTime) return;
+            if (currentTime - lastElectionTime < timeOut) return;
 
             /*
            start election.
             */
-            lastElectionTime = currentTime+ThreadLocalRandom.current().nextLong(200)+150;
+            lastElectionTime = currentTime;
+            timeOut = ThreadLocalRandom.current().nextLong(2000)+1500;
 
             currentTerm += 1; // increments its current term
             state = RaftState.CANDIDATE; // transition sot candidate state
