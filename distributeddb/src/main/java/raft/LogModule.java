@@ -1,15 +1,15 @@
 package raft;
 
-import raft.logmodule.LogEntry;
+import raft.logmodule.RaftLogEntry;
 
 public interface LogModule {
-    void append(LogEntry logEntry);
+    void append(RaftLogEntry raftLogEntry);
 
-    LogEntry read(Long index);
+    RaftLogEntry read(Long index);
 
     void removeOnStartIndex(Long startIndex);
 
-    LogEntry getLast();
+    RaftLogEntry getLast();
 
     Long getLastIndex();
 }

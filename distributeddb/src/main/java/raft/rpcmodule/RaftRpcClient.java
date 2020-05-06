@@ -35,7 +35,7 @@ public class RaftRpcClient {
                 .setTerm(args.term)
                 .setCandidateId(args.candidateId)
                 .setLastLogIndex(args.lastLogIndex)
-                .setLastLogTerm(args.lastLogTerm.term)
+                .setLastLogTerm(args.lastLogTerm)
                 .build();
         // send out the response here
 

@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
-import raft.logmodule.LogEntry;
+import raft.logmodule.RaftLogEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class RequestVoteRpcTest {
         int numRequest = 10;
         for (int i = 0; i < numRequest; i++) {
             RaftRequestVoteArgs args = new RaftRequestVoteArgs(
-                    i,0, -i, new LogEntry(i)
+                    i,0, -i, i
             );
             responses.add(client.requestVote(args));
         }

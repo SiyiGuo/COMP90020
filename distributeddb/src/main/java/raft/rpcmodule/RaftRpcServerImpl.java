@@ -5,7 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
-import raft.logmodule.LogEntry;
+import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
 
 public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase {
@@ -24,7 +24,7 @@ public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase
                 request.getTerm(),
                 request.getCandidateId(),
                 request.getLastLogIndex(),
-                new LogEntry(request.getLastLogTerm())
+                request.getLastLogTerm()
         ));
 
         RequestVoteResponse response = RequestVoteResponse.newBuilder()

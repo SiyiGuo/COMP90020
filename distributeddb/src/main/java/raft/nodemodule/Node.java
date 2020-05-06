@@ -192,7 +192,7 @@ public class Node implements LifeCycle, Runnable{
             for(RaftRpcClient peer:peers) {
                 results.add(threadPool.submit(() -> {
                     try {
-                        RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast());
+                        RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast().term);
                         return peer.requestVote(request);
                     } catch(Exception e) {
                         return null;
@@ -237,7 +237,8 @@ public class Node implements LifeCycle, Runnable{
 
             try {
                 // wait for the async result came back
-                countDown.await(NodeConfig.RPC_RESULT_WAIT_TIME+500, MILLISECONDS);
+                // you need to wait for atleast ELECTION_TIMEOUT_MIN to collect result
+                countDown.await(NodeConfig.ELECTION_TIMEOUT_MIN, MILLISECONDS);
             } catch (InterruptedException e) {
                 logger.warn("Node {} election task interrupted", nodeId);
             }

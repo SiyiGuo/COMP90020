@@ -1,12 +1,12 @@
 package raft;
 
-import raft.logmodule.LogEntry;
+import raft.logmodule.RaftLogEntry;
 
 public interface StateMachine {
-    void apply(LogEntry logEntry);
+    void apply(RaftLogEntry raftLogEntry);
 
 
-    LogEntry get(String key);
+    RaftLogEntry get(String key);
 
     String getString(String key);
 

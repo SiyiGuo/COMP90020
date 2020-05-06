@@ -5,20 +5,20 @@ import raft.LogModule;
 import java.util.ArrayList;
 
 public class RaftLogModule implements LogModule {
-    private ArrayList<LogEntry> logs;
+    private ArrayList<RaftLogEntry> logs;
 
     public RaftLogModule() {
         this.logs = new ArrayList<>();
     }
 
     @Override
-    public void append(LogEntry logEntry) {
-        this.logs.add(logEntry);
+    public void append(RaftLogEntry raftLogEntry) {
+        this.logs.add(raftLogEntry);
         //TODO: write to file?
     }
 
     @Override
-    public LogEntry read(Long index) {
+    public RaftLogEntry read(Long index) {
         return this.logs.get(Math.toIntExact(index));
     }
 
@@ -28,11 +28,11 @@ public class RaftLogModule implements LogModule {
     }
 
     @Override
-    public LogEntry getLast() {
+    public RaftLogEntry getLast() {
 //        if (this.logs.size() > 0) {
 //            return this.logs.get(this.logs.size()-1);
 //        }
-        return new LogEntry(-1);
+        return new RaftLogEntry(-1, "");
     }
 
     @Override
