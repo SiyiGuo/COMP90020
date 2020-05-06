@@ -179,7 +179,7 @@ public class Node implements LifeCycle, Runnable{
            start election.
             */
             lastElectionTime = currentTime;
-            timeOut = ThreadLocalRandom.current().nextLong(2000)+1500;
+            timeOut = ThreadLocalRandom.current().nextLong(NodeConfig.ELECTION_TIMEOUT_RANGE)+NodeConfig.ELECTION_TIMEOUT_MIN;
 
             currentTerm += 1; // increments its current term
             state = RaftState.CANDIDATE; // transition sot candidate state
