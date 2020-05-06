@@ -16,8 +16,8 @@ import java.util.List;
 
 // adapter server to forward handling back to RaftNode class.
 public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase {
-    private volatile Node nodeHook;
     private final Logger logger = LogManager.getLogger(RaftRpcServerImpl.class);
+    private volatile Node nodeHook;
 
     public RaftRpcServerImpl(@NotNull Node nodehook) {
         super();
@@ -46,14 +46,14 @@ public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase
     @Override
     public void appendEntries(AppendEntriesRequest request, StreamObserver<AppendEntriesResponse> responseObserver) {
         List<RaftLogEntry> entries = new ArrayList<RaftLogEntry>();
-        for(LogEntry entry: request.getEntriesList()) {
+        for (LogEntry entry : request.getEntriesList()) {
             entries.add(new RaftLogEntry(entry.getTerm(), entry.getValue()));
         }
         RaftAppendEntriesResult result = this.nodeHook.handleAppendEntries(new RaftAppendEntriesArgs(
                 request.getTerm(),
                 request.getLeaderId(),
                 request.getPrevLogIndex(),
-                request.getPrevLogTermTerm(),
+                request.getPrevLogTerm(),
                 entries,
                 request.getLeaderCommit()
         ));

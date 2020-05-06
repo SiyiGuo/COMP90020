@@ -3,6 +3,7 @@ package raft.logmodule;
 public class RaftLogEntry {
     public final long term;
     public final String value;
+
     public RaftLogEntry(long term, String value) {
         this.term = term;
         this.value = value;

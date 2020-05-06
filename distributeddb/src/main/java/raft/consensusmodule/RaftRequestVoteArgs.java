@@ -1,7 +1,5 @@
 package raft.consensusmodule;
 
-import raft.logmodule.RaftLogEntry;
-
 public class RaftRequestVoteArgs {
     public final long term;
     public final int candidateId;

@@ -1,7 +1,7 @@
 package raft;
 
 public interface LifeCycle {
-    public void init();
+    void init();
 
-    public void destroy();
+    void destroy();
 }

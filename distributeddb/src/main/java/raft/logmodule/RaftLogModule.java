@@ -41,6 +41,6 @@ public class RaftLogModule implements LogModule {
 //        if (this.logs.size() > 0) {
 //            return (long)(this.logs.size()-1);
 //        }
-        return (long)0;
+        return (long) 0;
     }
 }

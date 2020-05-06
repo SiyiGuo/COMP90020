@@ -9,10 +9,10 @@ import raft.nodemodule.Node;
 
 import java.io.IOException;
 
-public class RaftRpcServer implements Runnable{
+public class RaftRpcServer implements Runnable {
+    final static Logger logger = LogManager.getLogger(RaftRpcServer.class);
     private int listenPort;
     private Server server;
-    final static Logger logger = LogManager.getLogger(RaftRpcServer.class);
     private Node nodeHook;
 
     public RaftRpcServer(int listenPort, Node nodeHook) {

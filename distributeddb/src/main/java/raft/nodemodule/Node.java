@@ -4,7 +4,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
 import raft.concurrentutil.RaftThreadPool;
-import raft.consensusmodule.*;
+import raft.consensusmodule.RaftAppendEntriesArgs;
+import raft.consensusmodule.RaftAppendEntriesResult;
+import raft.consensusmodule.RaftConsensus;
+import raft.consensusmodule.RaftRequestVoteArgs;
+import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogModule;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
@@ -12,56 +16,48 @@ import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
 
 import java.util.ArrayList;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class Node implements LifeCycle, Runnable{
+public class Node implements LifeCycle, Runnable {
     public final static Logger logger = LogManager.getLogger(Node.class);
-
+    public final static int NULL_VOTE = -1;
     public final int nodeId;
-    private  RaftConsensus consensus;
-    private  RaftLogModule logModule;
-    private  RaftStateMachine stateMachine;
-
+    /* Engineering Variables*/
+    // config for this node
+    public final NodeConfig config;
+    // Peers
+    public ArrayList<RaftRpcClient> peers;
+    public int rpcCount;
+    private RaftConsensus consensus;
+    private RaftLogModule logModule;
+    private RaftStateMachine stateMachine;
     //state of this node
     private volatile RaftState state;
-
     //Persistent state on all servers
     private volatile long currentTerm;
-    public final static int NULL_VOTE = -1;
     private volatile int votedFor = NULL_VOTE; // candidate Id that received vote in a current term
-
     // volatile state on all servers
     private volatile long commitIndex; //highest log entry known to be commited
     private volatile long lastApplied;
-
     // volatile state on leaders
     // reinitialized after election
     private volatile ArrayList<Integer> nextIndex;
     private volatile ArrayList<Integer> matchIndex;
-
     // time variable
     private volatile long lastHeartBeatTime = 0;
     private volatile long lastElectionTime = 0;
     private volatile long timeOut = 0;
-
     // Task
-    private HeartBeatTask heartBeatTask ;
+    private HeartBeatTask heartBeatTask;
     private ElectionTask electionTask;
-
-    /* Engineering Variables*/
-    // config for this node
-    public final NodeConfig config;
     private RaftThreadPool threadPool;
-
     /* RPC related*/
     private RaftRpcServer rpcServer;
-    // Peers
-    public ArrayList<RaftRpcClient> peers;
-    public int rpcCount;
-
     // Other
     private volatile boolean started;
 
@@ -87,7 +83,7 @@ public class Node implements LifeCycle, Runnable{
          */
         // create peer list
         this.peers = new ArrayList<>();
-        for(NodeConfig.NodeAddress peer: this.config.peers) {
+        for (NodeConfig.NodeAddress peer : this.config.peers) {
             this.peers.add(new RaftRpcClient(peer.hostname, peer.port));
         }
         this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
@@ -154,7 +150,7 @@ public class Node implements LifeCycle, Runnable{
     }
 
     public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
-        return null;
+        return new RaftAppendEntriesResult(this.currentTerm, false);
     }
 
     public ClientResponse handleClientRequest(ClientRequest req) {
@@ -171,7 +167,7 @@ public class Node implements LifeCycle, Runnable{
         @Override
         public void run() {
             // look into time stamp
-            if (state  == RaftState.LEADER) return;
+            if (state == RaftState.LEADER) return;
 
             // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
@@ -181,7 +177,7 @@ public class Node implements LifeCycle, Runnable{
            start election.
             */
             lastElectionTime = currentTime;
-            timeOut = ThreadLocalRandom.current().nextLong(NodeConfig.ELECTION_TIMEOUT_RANGE)+NodeConfig.ELECTION_TIMEOUT_MIN;
+            timeOut = ThreadLocalRandom.current().nextLong(NodeConfig.ELECTION_TIMEOUT_RANGE) + NodeConfig.ELECTION_TIMEOUT_MIN;
 
             currentTerm += 1; // increments its current term
             state = RaftState.CANDIDATE; // transition sot candidate state
@@ -189,12 +185,12 @@ public class Node implements LifeCycle, Runnable{
 
             //RequestVoteRPC in parallel to other peers
             ArrayList<Future> results = new ArrayList<>();
-            for(RaftRpcClient peer:peers) {
+            for (RaftRpcClient peer : peers) {
                 results.add(threadPool.submit(() -> {
                     try {
                         RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast().term);
                         return peer.requestVote(request);
-                    } catch(Exception e) {
+                    } catch (Exception e) {
                         return null;
                     }
                 }));
@@ -203,12 +199,12 @@ public class Node implements LifeCycle, Runnable{
             // receive RequestVoteRpc Result
             AtomicInteger receivedVote = new AtomicInteger(0);
             CountDownLatch countDown = new CountDownLatch(results.size());
-            for(Future peerResult: results) {
-                threadPool.submit(()->{
-                    try{
+            for (Future peerResult : results) {
+                threadPool.submit(() -> {
+                    try {
                         // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
                         if (state == RaftState.FOLLOWER) return -1;
-                        RaftRequestVoteResult result = (RaftRequestVoteResult)peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, MILLISECONDS);
+                        RaftRequestVoteResult result = (RaftRequestVoteResult) peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, MILLISECONDS);
                         logger.info("election task received result: term {} voteGranted {}", result.term, result.voteGranted);
                         if (result == null) {
                             return -1;
@@ -227,8 +223,8 @@ public class Node implements LifeCycle, Runnable{
                         }
                         return 0;
                     } catch (Exception e) {
-                      logger.error("Recieve Request Vote result fail, error: ", e);
-                      return -1;
+                        logger.error("Recieve Request Vote result fail, error: ", e);
+                        return -1;
                     } finally {
                         countDown.countDown();
                     }
@@ -270,9 +266,9 @@ public class Node implements LifeCycle, Runnable{
             }
 
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastHeartBeatTime < NodeConfig.HEARTBEAT_INTERVAL_MS) {
-                return;
-            }
+//            if (currentTime - lastHeartBeatTime < NodeConfig.HEARTBEAT_INTERVAL_MS) {
+//                return;
+//            }
         }
         // nested class so that we can use Node's private variable
     }
