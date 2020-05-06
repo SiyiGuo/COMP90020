@@ -90,17 +90,19 @@ public class Node implements LifeCycle, Runnable{
         for(NodeConfig.NodeAddress peer: this.config.peers) {
             this.peers.add(new RaftRpcClient(peer.hostname, peer.port));
         }
+        this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
     }
 
     public void startNodeRunning() {
         /*
         Actual initial sequence
+        Actual initial sequence
          */
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.config.listenPort, this);
-        RaftThreadPool.execute(rpcServer);
-        RaftThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-        RaftThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+        this.threadPool.execute(rpcServer);
+        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
 
         // start 3 module
         this.logModule = new RaftLogModule();
