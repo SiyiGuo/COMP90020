@@ -9,5 +9,5 @@ import raft.logmodule.RaftLogEntry;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class RequestVoteRpcTest {
+public class RaftRpcTest {
 }

@@ -3,13 +3,18 @@ package raft.rpcmodule;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import raft.consensusmodule.RaftAppendEntriesArgs;
+import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
 
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 
+// adapter server to forward handling back to RaftNode class.
 public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase {
     private volatile Node nodeHook;
     private final Logger logger = LogManager.getLogger(RaftRpcServerImpl.class);
@@ -34,6 +39,29 @@ public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase
                 .setVoteGranted(result.voteGranted)
                 .build();
 
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void appendEntries(AppendEntriesRequest request, StreamObserver<AppendEntriesResponse> responseObserver) {
+        List<RaftLogEntry> entries = new ArrayList<RaftLogEntry>();
+        for(LogEntry entry: request.getEntriesList()) {
+            entries.add(new RaftLogEntry(entry.getTerm(), entry.getValue()));
+        }
+        RaftAppendEntriesResult result = this.nodeHook.handleAppendEntries(new RaftAppendEntriesArgs(
+                request.getTerm(),
+                request.getLeaderId(),
+                request.getPrevLogIndex(),
+                request.getPrevLogTermTerm(),
+                entries,
+                request.getLeaderCommit()
+        ));
+
+        AppendEntriesResponse response = AppendEntriesResponse.newBuilder()
+                .setTerm(result.term)
+                .setSuccess(result.success)
+                .build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
