@@ -8,11 +8,13 @@ import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
 
+import javax.validation.constraints.NotNull;
+
 public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase {
     private volatile Node nodeHook;
     private final Logger logger = LogManager.getLogger(RaftRpcServerImpl.class);
 
-    public RaftRpcServerImpl(Node nodehook) {
+    public RaftRpcServerImpl(@NotNull Node nodehook) {
         super();
         this.nodeHook = nodehook;
     }

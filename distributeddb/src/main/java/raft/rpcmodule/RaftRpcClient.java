@@ -25,10 +25,6 @@ public class RaftRpcClient {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    public void test() {
-        System.out.println("say something");
-    }
-
     public RaftRequestVoteResult requestVote(RaftRequestVoteArgs args) {
         // correspong to name field
         RequestVoteRequest request = RequestVoteRequest.newBuilder()
