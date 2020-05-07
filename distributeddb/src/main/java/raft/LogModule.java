@@ -5,7 +5,7 @@ import raft.logmodule.RaftLogEntry;
 public interface LogModule {
     void append(RaftLogEntry raftLogEntry);
 
-    RaftLogEntry read(Long index);
+    RaftLogEntry getLog(Long index);
 
     void removeOnStartIndex(Long startIndex);
 

@@ -271,6 +271,15 @@ public class Node implements LifeCycle, Runnable {
     /*
     Jungle of Getter and Setter
      */
+
+    public long getCommitIndex() {
+        return commitIndex;
+    }
+
+    public void setCommitIndex(long commitIndex) {
+        this.commitIndex = commitIndex;
+    }
+
     public RaftLogModule getLogModule() {
         return logModule;
     }
