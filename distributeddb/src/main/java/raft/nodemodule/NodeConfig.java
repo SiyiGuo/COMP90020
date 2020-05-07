@@ -5,7 +5,8 @@ import java.util.ArrayList;
 
 public class NodeConfig {
     // RequestVote config
-//    public static final long HEARTBEAT_INTERVAL_MS = (long) 5 * 1000;
+
+    public static final long HEARTBEAT_INTERVAL_MS = 1000;
 //    public static final long ELECTION_INTERVAL_MS = (long) 15 * 1000;
     /* these are related together */
     public static final int ELECTION_TIMEOUT_MIN = 1500;

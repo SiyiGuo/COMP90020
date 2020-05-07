@@ -3,6 +3,9 @@ package raft.statemachinemodule;
 import raft.StateMachine;
 import raft.logmodule.RaftLogEntry;
 
+/*
+This keep state modified by algorithm and LogEntry
+ */
 public class RaftStateMachine implements StateMachine {
     public RaftStateMachine() {
     }

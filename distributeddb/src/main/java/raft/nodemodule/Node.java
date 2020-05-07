@@ -23,6 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+/*
+Node keep state of the class
+ */
 public class Node implements LifeCycle, Runnable {
     public final static Logger logger = LogManager.getLogger(Node.class);
     public final static int NULL_VOTE = -1;
@@ -102,7 +105,7 @@ public class Node implements LifeCycle, Runnable {
 
         // start 3 module
         this.logModule = new RaftLogModule();
-        this.consensus = new RaftConsensus();
+        this.consensus = new RaftConsensus(this);
         this.stateMachine = new RaftStateMachine();
     }
 
@@ -126,27 +129,7 @@ public class Node implements LifeCycle, Runnable {
 
     public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
         logger.info("Node: {} receive election request: {} currentTerm {} votedFor {}", this.nodeId, args, currentTerm, votedFor);
-
-        // TODO: let consensus handle this
-        if (args.term < this.currentTerm) {
-            return new RaftRequestVoteResult(
-                    this.currentTerm,
-                    false
-            );
-        }
-
-        if (votedFor == NULL_VOTE || votedFor == args.candidateId) {
-            // TODO: and candidates's log is at least as up-to-date as receiver's log. grant vote
-            this.state = RaftState.FOLLOWER;
-            this.votedFor = args.candidateId;
-            this.currentTerm = args.term;
-            return new RaftRequestVoteResult(
-                    this.currentTerm,
-                    true
-            );
-        }
-
-        return new RaftRequestVoteResult(this.currentTerm, false);
+        return this.consensus.requestVote(args);
     }
 
     public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
@@ -176,7 +159,7 @@ public class Node implements LifeCycle, Runnable {
             /*
            start election.
             */
-            lastElectionTime = currentTime;
+            lastElectionTime = System.currentTimeMillis();
             timeOut = ThreadLocalRandom.current().nextLong(NodeConfig.ELECTION_TIMEOUT_RANGE) + NodeConfig.ELECTION_TIMEOUT_MIN;
 
             currentTerm += 1; // increments its current term
@@ -202,7 +185,6 @@ public class Node implements LifeCycle, Runnable {
             for (Future peerResult : results) {
                 threadPool.submit(() -> {
                     try {
-                        // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
                         if (state == RaftState.FOLLOWER) return -1;
                         RaftRequestVoteResult result = (RaftRequestVoteResult) peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, MILLISECONDS);
                         logger.info("election task received result: term {} voteGranted {}", result.term, result.voteGranted);
@@ -210,7 +192,8 @@ public class Node implements LifeCycle, Runnable {
                             return -1;
                         }
 
-                        // All Servers: if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
+                        // All Servers:
+                        // if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
                         if (result.term > currentTerm) {
                             currentTerm = result.term;
                             state = RaftState.FOLLOWER;
@@ -239,7 +222,8 @@ public class Node implements LifeCycle, Runnable {
                 logger.warn("Node {} election task interrupted", nodeId);
             }
 
-            // All servers: if RPC request or response contains term T > currentTerm, set currentTerm and convert to follower.
+            // All servers:
+            // if RPC request or response contains term T > currentTerm, set currentTerm and convert to follower.
             if (state == RaftState.FOLLOWER) {
                 return;
             }
@@ -249,7 +233,12 @@ public class Node implements LifeCycle, Runnable {
             // include myself, this is the majority vote
             if (receivedVote.intValue() >= (peers.size() / 2)) {
                 state = RaftState.LEADER;
-                //TODO: do something as leader
+                /*
+                TODO:
+                Once a candidate wins an election, it becomes leader.
+                It then sends heartbeat messages to all of the other servers to establish its authority
+                and prevent new election
+                */
             }
 
             // Candidate: if election timeout elapses: start new election
@@ -257,19 +246,56 @@ public class Node implements LifeCycle, Runnable {
         }
     }
 
+    /*
+    Invoked by leader to replicate log entries. Also used as heartbeat
+     */
     class HeartBeatTask implements Runnable {
         @Override
         public void run() {
             if (state != RaftState.LEADER) {
-                // do some thing as leader
                 return;
             }
 
             long currentTime = System.currentTimeMillis();
-//            if (currentTime - lastHeartBeatTime < NodeConfig.HEARTBEAT_INTERVAL_MS) {
-//                return;
-//            }
+            if (currentTime - lastHeartBeatTime < NodeConfig.HEARTBEAT_INTERVAL_MS) {
+                return;
+            }
+            lastHeartBeatTime = System.currentTimeMillis();
+
+            /*
+            Start Append Entries
+             */
         }
-        // nested class so that we can use Node's private variable
+    }
+
+    /*
+    Jungle of Getter and Setter
+     */
+    public RaftLogModule getLogModule() {
+        return logModule;
+    }
+
+    public void setLogModule(RaftLogModule logModule) {
+        this.logModule = logModule;
+    }
+
+    public void setState(RaftState state) {
+        this.state = state;
+    }
+
+    public long getCurrentTerm() {
+        return currentTerm;
+    }
+
+    public void setCurrentTerm(long currentTerm) {
+        this.currentTerm = currentTerm;
+    }
+
+    public int getVotedFor() {
+        return votedFor;
+    }
+
+    public void setVotedFor(int votedFor) {
+        this.votedFor = votedFor;
     }
 }
