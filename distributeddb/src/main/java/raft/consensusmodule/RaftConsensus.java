@@ -50,18 +50,35 @@ public class RaftConsensus implements Consensus {
 
     @Override
     public RaftAppendEntriesResult appendEntries(RaftAppendEntriesArgs args) {
+        /*
+        TODO:
+        What is the order in terms of AppendEntries RPC
+        and
+        Rules for Servers
+         */
+
+        // AppendEntries RPC
+        // Reply false if term < currentTerm
+        if (args.term < this.nodehook.getCurrentTerm()) {
+            return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), false);
+        }
+
+        // set last hearthbeat time
+        this.nodehook.setLastElectionTime(System.currentTimeMillis());
+
         // Rules for servers
-        if (args.term > this.nodehook.getCurrentTerm()) {
+        // AllServers
+        if (args.term >= this.nodehook.getCurrentTerm()) {
             // If RPC request or response contains term T > currentTerm, setCurrentTerm = T
             this.nodehook.setCurrentTerm(args.term);
             // convert to Follower
             this.nodehook.setState(RaftState.FOLLOWER);
         }
 
-        // AppendEntries RPC
-        // Reply false if term < currentTerm
-        if (args.term < this.nodehook.getCurrentTerm()) {
-            return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), false);
+        // Rules for Servers: Candidaates
+        if (this.nodehook.getState() == RaftState.CANDIDATE) {
+            // if AppendEntries RPC received from new leader: convert to follower
+            this.nodehook.setState(RaftState.FOLLOWER);
         }
 
         // Reply false if log doesn't contain any entry at prevLogIndex whose term matches prevLogTerm

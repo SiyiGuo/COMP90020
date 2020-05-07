@@ -9,7 +9,9 @@ import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.consensusmodule.RaftConsensus;
 import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
+import raft.logmodule.RaftLogEntry;
 import raft.logmodule.RaftLogModule;
+import raft.rpcmodule.LogEntry;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
 import raft.statemachinemodule.RaftState;
@@ -145,6 +147,41 @@ public class Node implements LifeCycle, Runnable {
         return null;
     }
 
+    public void sendEmptyAppendEntries() {
+        if (this.state != RaftState.LEADER) {
+            logger.error("Node {} is not leader but triggered leader task", this.nodeId);
+            return;
+        }
+
+        /*
+            Start Append empty entries
+             */
+        for (RaftRpcClient peer : peers) {
+            threadPool.execute(() -> {
+                try {
+                    RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
+                            currentTerm,
+                            nodeId,
+                            logModule.getLastIndex(),
+                            logModule.getLast().term,
+                            new ArrayList<RaftLogEntry>(),
+                            commitIndex
+                    );
+                    RaftAppendEntriesResult result = peer.appendEntries(request);
+                    if (result.term > currentTerm) {
+                        logger.debug("Node{} has outdated term {} received term {}. Become follower",
+                                nodeId, result.term, currentTerm);
+                        currentTerm = result.term;
+                        votedFor = NULL_VOTE;
+                        state = RaftState.FOLLOWER;
+                    }
+                } catch (Exception e) {
+                    logger.error("HeadBeat Task RPF fail.");
+                }
+            }, false);
+        }
+    }
+
     class ElectionTask implements Runnable {
         // nested class such that can use Node's private variable
         @Override
@@ -239,6 +276,7 @@ public class Node implements LifeCycle, Runnable {
                 It then sends heartbeat messages to all of the other servers to establish its authority
                 and prevent new election
                 */
+                sendEmptyAppendEntries();
             }
 
             // Candidate: if election timeout elapses: start new election
@@ -262,15 +300,29 @@ public class Node implements LifeCycle, Runnable {
             }
             lastHeartBeatTime = System.currentTimeMillis();
 
-            /*
-            Start Append Entries
-             */
+            sendEmptyAppendEntries();
         }
     }
 
     /*
     Jungle of Getter and Setter
      */
+
+    public long getLastHeartBeatTime() {
+        return lastHeartBeatTime;
+    }
+
+    public void setLastHeartBeatTime(long lastHeartBeatTime) {
+        this.lastHeartBeatTime = lastHeartBeatTime;
+    }
+
+    public long getLastElectionTime() {
+        return lastElectionTime;
+    }
+
+    public void setLastElectionTime(long lastElectionTime) {
+        this.lastElectionTime = lastElectionTime;
+    }
 
     public long getCommitIndex() {
         return commitIndex;
