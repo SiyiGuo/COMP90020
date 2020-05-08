@@ -11,23 +11,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class Application {
 
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
     @RequestMapping("/")
     public String home() {
         return "Hello Docker World";
     }
 
-    @RequestMapping(value="/get", method=RequestMethod.GET)
+    @RequestMapping(value = "/get", method = RequestMethod.GET)
     public String get(@RequestParam String key) {
         return key;
     }
 
-    @RequestMapping(value="/put", method= RequestMethod.POST)
+    @RequestMapping(value = "/put", method = RequestMethod.POST)
     public String put(@RequestParam String key, @RequestParam String value) {
-        return key+value;
-    }
-
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+        return key + value;
     }
 
 }
