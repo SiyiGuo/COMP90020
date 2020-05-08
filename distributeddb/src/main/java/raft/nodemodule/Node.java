@@ -11,11 +11,11 @@ import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
 import raft.logmodule.RaftLogModule;
-import raft.rpcmodule.LogEntry;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
+import raft.RuleSet.RulesForServers;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -32,6 +32,7 @@ public class Node implements LifeCycle, Runnable {
     public final static Logger logger = LogManager.getLogger(Node.class);
     public final static int NULL_VOTE = -1;
     public final int nodeId;
+    public final Node nodehook;
     /* Engineering Variables*/
     // config for this node
     public final NodeConfig config;
@@ -68,6 +69,7 @@ public class Node implements LifeCycle, Runnable {
 
     public Node(NodeConfig config) {
         this.nodeId = config.listenPort;
+        this.nodehook = this;
 
         this.commitIndex = 0;
         this.lastApplied = 0;
@@ -131,11 +133,11 @@ public class Node implements LifeCycle, Runnable {
 
     public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
         logger.info("Node: {} receive election request: {} currentTerm {} votedFor {}", this.nodeId, args, currentTerm, votedFor);
-        return this.consensus.requestVote(args);
+        return this.consensus.handleRequestVote(args);
     }
 
     public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
-        return new RaftAppendEntriesResult(this.currentTerm, false);
+        return this.consensus.handleAppendEntries(args);
     }
 
     public ClientResponse handleClientRequest(ClientRequest req) {
@@ -154,11 +156,15 @@ public class Node implements LifeCycle, Runnable {
         }
 
         /*
-            Start Append empty entries
-             */
+        Start Append empty entries
+         */
         for (RaftRpcClient peer : peers) {
             threadPool.execute(() -> {
                 try {
+                    if(this.state != RaftState.LEADER) {
+                        return;
+                    }
+
                     RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
                             currentTerm,
                             nodeId,
@@ -168,13 +174,7 @@ public class Node implements LifeCycle, Runnable {
                             commitIndex
                     );
                     RaftAppendEntriesResult result = peer.appendEntries(request);
-                    if (result.term > currentTerm) {
-                        logger.debug("Node{} has outdated term {} received term {}. Become follower",
-                                nodeId, result.term, currentTerm);
-                        currentTerm = result.term;
-                        votedFor = NULL_VOTE;
-                        state = RaftState.FOLLOWER;
-                    }
+                    RulesForServers.compareTermAndBecomeFollower(request.term, nodehook);
                 } catch (Exception e) {
                     logger.error("HeadBeat Task RPF fail.");
                 }
@@ -189,6 +189,13 @@ public class Node implements LifeCycle, Runnable {
             // look into time stamp
             if (state == RaftState.LEADER) return;
 
+            /*
+            Work as Follower / Candidate
+            Followers (§5.2): If election timeout elapses without receiving AppendEntries
+            RPC from current leader or granting vote to candidate:
+            convert to candidate
+            Candidates (§5.2): If election timeout elapses: start new election
+             */
             // wait for a random amount of variable
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastElectionTime < timeOut) return;
@@ -229,11 +236,7 @@ public class Node implements LifeCycle, Runnable {
                             return -1;
                         }
 
-                        // All Servers:
-                        // if RPC request or response contains term T > currentTerm, set currentTerm = T, convert to follower
-                        if (result.term > currentTerm) {
-                            currentTerm = result.term;
-                            state = RaftState.FOLLOWER;
+                        if (RulesForServers.compareTermAndBecomeFollower(result.term, nodehook)) {
                             return 0;
                         }
 
@@ -271,10 +274,10 @@ public class Node implements LifeCycle, Runnable {
             if (receivedVote.intValue() >= (peers.size() / 2)) {
                 state = RaftState.LEADER;
                 /*
-                TODO:
-                Once a candidate wins an election, it becomes leader.
-                It then sends heartbeat messages to all of the other servers to establish its authority
-                and prevent new election
+                Leaders:
+                Upon election: send initial empty AppendEntries RPCs
+                (heartbeat) to each server; repeat during idle periods to
+                prevent election timeouts (§5.2)
                 */
                 sendEmptyAppendEntries();
             }
@@ -304,10 +307,16 @@ public class Node implements LifeCycle, Runnable {
         }
     }
 
-    /*
-    Jungle of Getter and Setter
-     */
+    @Override
+    public String toString() {
+        return String.format(
+                "NodeId: %s, currentTerm: %s, votedFor:%s", this.nodeId, this.currentTerm, this.votedFor
+        );
+    }
 
+    /*
+        Jungle of Getter and Setter
+         */
     public long getLastHeartBeatTime() {
         return lastHeartBeatTime;
     }

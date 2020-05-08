@@ -1,30 +1,32 @@
 package raft.consensusmodule;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import raft.Consensus;
 import raft.nodemodule.Node;
 import raft.statemachinemodule.RaftState;
+import raft.RuleSet.RulesForServers;
 
 /*
 This implements Receiver Implementations
  */
 public class RaftConsensus implements Consensus {
+    public final static Logger logger = LogManager.getLogger(Consensus.class);
     private volatile Node nodehook;
     public RaftConsensus(Node nodehook) {
         this.nodehook = nodehook;
     }
 
     @Override
-    public RaftRequestVoteResult requestVote(RaftRequestVoteArgs args) {
-        // Rules for servers
-        if (args.term > this.nodehook.getCurrentTerm()) {
-            // If RPC request or response contains term T > currentTerm, setCurrentTerm = T
-            this.nodehook.setCurrentTerm(args.term);
-            // convert to Follower
-            this.nodehook.setState(RaftState.FOLLOWER);
-        }
+    public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
 
-        // RequestVote RPC
-        // Reply false if term < currentTerm
+        RulesForServers.compareTermAndBecomeFollower(args.term, this.nodehook);
+
+        /*
+        RequestVote RPC
+        Receiver Implementation
+         */
+        // Reply false if term < currentTerm;
         if (args.term < this.nodehook.getCurrentTerm()) {
             return new RaftRequestVoteResult(
                     this.nodehook.getCurrentTerm(),
@@ -49,7 +51,7 @@ public class RaftConsensus implements Consensus {
     }
 
     @Override
-    public RaftAppendEntriesResult appendEntries(RaftAppendEntriesArgs args) {
+    public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
         /*
         TODO:
         What is the order in terms of AppendEntries RPC
@@ -57,56 +59,77 @@ public class RaftConsensus implements Consensus {
         Rules for Servers
          */
 
-        // AppendEntries RPC
-        // Reply false if term < currentTerm
-        if (args.term < this.nodehook.getCurrentTerm()) {
-            return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), false);
-        }
+        RulesForServers.compareTermAndBecomeFollower(args.term, this.nodehook);
 
-        // set last hearthbeat time
-        this.nodehook.setLastElectionTime(System.currentTimeMillis());
-
-        // Rules for servers
-        // AllServers
-        if (args.term >= this.nodehook.getCurrentTerm()) {
-            // If RPC request or response contains term T > currentTerm, setCurrentTerm = T
-            this.nodehook.setCurrentTerm(args.term);
-            // convert to Follower
-            this.nodehook.setState(RaftState.FOLLOWER);
-        }
-
-        // Rules for Servers: Candidaates
+        // Candidates (§5.2): If AppendEntries RPC received from new leader: convert to follower
         if (this.nodehook.getState() == RaftState.CANDIDATE) {
-            // if AppendEntries RPC received from new leader: convert to follower
             this.nodehook.setState(RaftState.FOLLOWER);
         }
 
-        // Reply false if log doesn't contain any entry at prevLogIndex whose term matches prevLogTerm
-        if (this.nodehook.getLogModule().getLog(args.prevLogIndex) == null ||
-                this.nodehook.getLogModule().getLog(args.prevLogIndex).term != args.prevLogTerm
-        ) {
-            return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), false);
+        /*
+        AppendEntries RPC
+        Receiver Implementation. Should be Triggered by FOLLOWER
+         */
+        if (this.nodehook.getState() == RaftState.FOLLOWER) {
+            // Reply false if term < currentTerm
+            if (args.term < this.nodehook.getCurrentTerm()) {
+                return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), false);
+            }
+
+            // set last hearthbeat time
+            this.nodehook.setLastElectionTime(System.currentTimeMillis());
+
+            // Reply false if log doesn't contain any entry at prevLogIndex whose term matches prevLogTerm
+            if (this.nodehook.getLogModule().getLog(args.prevLogIndex) == null ||
+                    this.nodehook.getLogModule().getLog(args.prevLogIndex).term != args.prevLogTerm
+            ) {
+                return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), false);
+            }
+
+            /*
+            TODO:
+             If an existing entry conflicet with a new one
+             (Same index but different terms)
+             delete the existing entries and all that follow it.
+             (I believe this is to do wil log replication. We are currently doling Leader election)
+             */
+
+            /*
+            TODO:
+            Append new entries not already in the log
+             */
+
+            // if leaderCommit > commitINdex, set commitIndex = min(leaderCommit, index of alst new entry)
+            if (args.leaderCommit > this.nodehook.getCommitIndex()) {
+                this.nodehook.setCommitIndex(Math.min(args.leaderCommit, this.nodehook.getLogModule().getLastIndex()));
+            }
+
+            // true if follow contained entry matching prevLogIndex and prevLogTerm
+            return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), true);
         }
 
-        /*
-        TODO:
-         If an existing entry conflicet with a new one
-         (Same index but different terms)
-         delete the existing entries and all that follow it.
-         (I believe this is to do wil log replication. We are currently doling Leader election)
-         */
 
-        /*
-        TODO:
-        Append new entries not already in the log
-         */
-
-        // if leaderCommit > commitINdex, set commitIndex = min(leaderCommit, index of alst new entry)
-        if (args.leaderCommit > this.nodehook.getCommitIndex()) {
-            this.nodehook.setCommitIndex(Math.min(args.leaderCommit, this.nodehook.getLogModule().getLastIndex()));
+        if (this.nodehook.getState() == RaftState.LEADER) {
+            /*
+            TODO:
+            If command received from client: append entry to local log,
+            respond after entry applied to state machine (§5.3)
+            • If last log index ≥ nextIndex for a follower: send
+            AppendEntries RPC with log entries starting at nextIndex
+            • If successful: update nextIndex and matchIndex for
+            follower (§5.3)
+            • If AppendEntries fails because of log inconsistency:
+            decrement nextIndex and retry (§5.3)
+            • If there exists an N such that N > commitIndex, a majority
+            of matchIndex[i] ≥ N, and log[N].term == currentTerm:
+            set commitIndex = N (§5.3, §5.4).
+             */
+            return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), true);
         }
 
-        // true if follow contained entry matching prevLogIndex and prevLogTerm
-        return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), true);
+        // Should not be triggered
+        logger.warn("Node {} should not reach this when handling AppendEntries {}",
+                this.nodehook.nodeId, this.nodehook.toString());
+        return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), false);
     }
 }

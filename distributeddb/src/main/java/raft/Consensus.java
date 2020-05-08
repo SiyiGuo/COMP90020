@@ -7,7 +7,7 @@ import raft.consensusmodule.RaftRequestVoteResult;
 
 public interface Consensus {
 
-    RaftRequestVoteResult requestVote(RaftRequestVoteArgs args);
+    RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args);
 
-    RaftAppendEntriesResult appendEntries(RaftAppendEntriesArgs args);
+    RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args);
 }
