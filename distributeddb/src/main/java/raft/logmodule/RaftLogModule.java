@@ -19,6 +19,9 @@ public class RaftLogModule implements LogModule {
 
     @Override
     public RaftLogEntry getLog(Long index) {
+        if (index >= this.logs.size()) {
+            return null;
+        }
         return this.logs.get(Math.toIntExact(index));
     }
 

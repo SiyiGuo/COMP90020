@@ -46,10 +46,21 @@ public class RaftTest {
         }
 
         // run some test
-        for(int iter = 0; iter < 5; iter++) {
+        int leaderId = -1;
+        for(int iter = 0; iter < 10; iter++) {
             // wait some time
             long ms = NodeConfig.ELECTION_TIMEOUT_MIN+ ThreadLocalRandom.current().nextLong(NodeConfig.ELECTION_TIMEOUT_RANGE);
             TimeUnit.MILLISECONDS.sleep(ms);
+            for(Node node: nodes) {
+                if (node.getState().equals(RaftState.LEADER)) {
+                    System.err.println("At Iteration: " + iter + " we have one leader: " + node.nodeId);
+                    if (leaderId == -1) {
+                        leaderId = node.nodeId;
+                    } else{
+                        Assert.assertEquals(leaderId, node.nodeId);
+                    }
+                }
+            }
         }
 
         // check a leader exist
