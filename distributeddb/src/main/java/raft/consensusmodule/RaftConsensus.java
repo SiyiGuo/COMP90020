@@ -78,6 +78,7 @@ public class RaftConsensus implements Consensus {
 
             // set last hearthbeat time
             this.nodehook.setLastElectionTime(System.currentTimeMillis());
+            this.nodehook.setRandomTimeout();
 
             // Reply false if log doesn't contain any entry at prevLogIndex whose term matches prevLogTerm
             if (this.nodehook.getLogModule().getLog(args.prevLogIndex) == null ||
