@@ -218,6 +218,7 @@ public class Node implements LifeCycle, Runnable {
                         RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast().term);
                         return peer.requestVote(request);
                     } catch (Exception e) {
+                        logger.error(e);
                         return null;
                     }
                 }));
@@ -231,10 +232,10 @@ public class Node implements LifeCycle, Runnable {
                     try {
                         if (state == RaftState.FOLLOWER) return -1;
                         RaftRequestVoteResult result = (RaftRequestVoteResult) peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, MILLISECONDS);
-                        logger.info("election task received result: term {} voteGranted {}", result.term, result.voteGranted);
                         if (result == null) {
                             return -1;
                         }
+                        logger.info("election task received result: term {} voteGranted {}", result.term, result.voteGranted);
 
                         if (RulesForServers.compareTermAndBecomeFollower(result.term, nodehook)) {
                             return 0;

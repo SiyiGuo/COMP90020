@@ -35,7 +35,12 @@ public class RaftLogModule implements LogModule {
         if (this.logs.size() > 0) {
             return this.logs.get(this.logs.size()-1);
         }
-        return new RaftLogEntry(-1, "");
+        /*
+        TODO
+        check assumption here
+        we aussme is there is no log, return term0, index0 and no value
+         */
+        return new RaftLogEntry(0, 0,"");
     }
 
     @Override

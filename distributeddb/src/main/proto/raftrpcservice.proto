@@ -14,7 +14,8 @@ service RaftRpcService {
 
 message LogEntry {
     int64 term = 1;
-    string value = 2;
+    int64 index = 2;
+    string value = 3;
 }
 
 //RequestVote RPC
