@@ -26,14 +26,4 @@ public class NodeConfig {
             this.peers.add(new NodeAddress(Integer.parseInt(parts[1]), parts[0]));
         }
     }
-
-    public static class NodeAddress {
-        public final int port;
-        public final String hostname;
-
-        public NodeAddress(int port, String hostname) {
-            this.port = port;
-            this.hostname = hostname;
-        }
-    }
 }
