@@ -27,7 +27,9 @@ public class RaftLogModule implements LogModule {
 
     @Override
     public void removeOnStartIndex(Long startIndex) {
-
+        // this delete start Index should always be smaller than size of Array
+        // otherwise there is an error in algorithm
+        this.logs.subList(Math.toIntExact(startIndex), this.logs.size()).clear();
     }
 
     @Override

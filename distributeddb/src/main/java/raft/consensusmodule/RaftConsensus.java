@@ -3,9 +3,12 @@ package raft.consensusmodule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.Consensus;
+import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
 import raft.statemachinemodule.RaftState;
 import raft.RuleSet.RulesForServers;
+
+import java.util.ArrayList;
 
 /*
 This implements Receiver Implementations
@@ -52,13 +55,6 @@ public class RaftConsensus implements Consensus {
 
     @Override
     public RaftAppendEntriesResult handleAppendEntries(RaftAppendEntriesArgs args) {
-        /*
-        TODO:
-        What is the order in terms of AppendEntries RPC
-        and
-        Rules for Servers
-         */
-
         RulesForServers.compareTermAndBecomeFollower(args.term, this.nodehook);
 
         // Candidates (§5.2): If AppendEntries RPC received from new leader: convert to follower
@@ -88,17 +84,25 @@ public class RaftConsensus implements Consensus {
             }
 
             /*
-            TODO:
              If an existing entry conflicet with a new one
              (Same index but different terms)
              delete the existing entries and all that follow it.
-             (I believe this is to do wil log replication. We are currently doling Leader election)
              */
+            ArrayList<RaftLogEntry> newEntries = new ArrayList<>();
+            for(RaftLogEntry newEntry: args.entries) {
+                RaftLogEntry existingEntry = this.nodehook.getLogModule().getLog(newEntry.index);
+                if (existingEntry != null && existingEntry.term != newEntry.term) {
+                    // There is a conflict. delete existing entry and all that follow it
+                    this.nodehook.getLogModule().removeOnStartIndex(newEntry.index);
+                } else {
+                    newEntries.add(newEntry);
+                }
+            }
 
-            /*
-            TODO:
-            Append new entries not already in the log
-             */
+            //Append new entries not already in the log
+            newEntries.forEach((newEntry) -> {
+                this.nodehook.getLogModule().append(newEntry);
+            });
 
             // if leaderCommit > commitINdex, set commitIndex = min(leaderCommit, index of alst new entry)
             if (args.leaderCommit > this.nodehook.getCommitIndex()) {
