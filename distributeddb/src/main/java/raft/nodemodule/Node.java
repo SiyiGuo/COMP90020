@@ -18,6 +18,7 @@ import raft.statemachinemodule.RaftStateMachine;
 import raft.RuleSet.RulesForServers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
@@ -51,9 +52,11 @@ public class Node implements LifeCycle, Runnable {
     private volatile long commitIndex; //highest log entry known to be commited
     private volatile long lastApplied;
     // volatile state on leaders
+
     // reinitialized after election
-    private volatile ArrayList<Integer> nextIndex;
-    private volatile ArrayList<Integer> matchIndex;
+    private volatile HashMap<Integer, Integer> nextIndex;
+    private volatile HashMap<Integer, Integer> matchIndex;
+
     // time variable
     private volatile long lastHeartBeatTime = 0;
     private volatile long lastElectionTime = 0;
@@ -147,6 +150,30 @@ public class Node implements LifeCycle, Runnable {
     // redirect to leader
     public ClientResponse redirect(ClientRequest req) {
         return null;
+    }
+
+    public void actionsWhenBecameLeader() {
+        /*
+        Leaders:
+        Upon election: send initial empty AppendEntries RPCs
+        (heartbeat) to each server; repeat during idle periods to
+        prevent election timeouts (§5.2)
+        */
+        sendEmptyAppendEntries();
+
+        /*
+        TODO: Blocked by Peer Module
+        Volatile state on leaders:
+        (Reinitialized after election)
+        nextIndex[] for each server, index of the next log entry
+        to send to that server (initialized to leader
+        last log index + 1)
+        matchIndex[] for each server, index of highest log entry
+        known to be replicated on server
+        (initialized to 0, increases monotonically)
+         */
+        this.nextIndex = new HashMap<>();
+        this.matchIndex = new HashMap<>();
     }
 
     public void sendEmptyAppendEntries() {
@@ -274,13 +301,8 @@ public class Node implements LifeCycle, Runnable {
             // include myself, this is the majority vote
             if (receivedVote.intValue() >= (peers.size() / 2)) {
                 state = RaftState.LEADER;
-                /*
-                Leaders:
-                Upon election: send initial empty AppendEntries RPCs
-                (heartbeat) to each server; repeat during idle periods to
-                prevent election timeouts (§5.2)
-                */
-                sendEmptyAppendEntries();
+
+                actionsWhenBecameLeader();
             }
 
             // Candidate: if election timeout elapses: start new election
@@ -304,6 +326,7 @@ public class Node implements LifeCycle, Runnable {
             }
             lastHeartBeatTime = System.currentTimeMillis();
 
+            // Send Out Heartbeat
             sendEmptyAppendEntries();
         }
     }
