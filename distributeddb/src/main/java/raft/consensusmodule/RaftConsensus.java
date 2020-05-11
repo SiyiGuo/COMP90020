@@ -12,6 +12,7 @@ import java.util.ArrayList;
 
 /*
 This implements Receiver Implementations
+Request Handling
  */
 public class RaftConsensus implements Consensus {
     public final static Logger logger = LogManager.getLogger(Consensus.class);
@@ -24,6 +25,7 @@ public class RaftConsensus implements Consensus {
     public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
         // TODO: handle new joiner requestVote command
         // TODO: when recieved unknown request, add it to addressBook?
+        // OR: send request to leader as registration
 
         RulesForServers.compareTermAndBecomeFollower(args.term, this.nodehook);
 
@@ -131,6 +133,7 @@ public class RaftConsensus implements Consensus {
             of matchIndex[i] ≥ N, and log[N].term == currentTerm:
             set commitIndex = N (§5.3, §5.4).
              */
+
             return new RaftAppendEntriesResult(this.nodehook.getCurrentTerm(), true);
         }
 

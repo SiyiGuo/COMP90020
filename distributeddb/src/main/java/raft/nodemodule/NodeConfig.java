@@ -15,4 +15,10 @@ public class NodeConfig {
     public static final int ELECTION_TIMEOUT_RANGE = 2000;
     public static final int TASK_DELAY = 500;
     public static final int RPC_RESULT_WAIT_TIME = 1000;
+
+     /*
+     Since 2000 / 500 = 4
+     so when 8 nodes, we may have 2 leadder at the same time
+     reduce task interval
+      */
 }

@@ -19,6 +19,7 @@ import raft.ruleSet.RulesForServers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
@@ -63,8 +64,8 @@ public class Node implements LifeCycle, Runnable {
     // volatile state on leaders
 
     // reinitialized after election
-    private volatile HashMap<Integer, Long> nextIndex;
-    private volatile HashMap<Integer, Long> matchIndex;
+    private volatile ConcurrentHashMap<Integer, Long> nextIndex;
+    private volatile ConcurrentHashMap<Integer, Long> matchIndex;
 
     // time variable
     private volatile long lastHeartBeatTime = 0;
@@ -92,6 +93,8 @@ public class Node implements LifeCycle, Runnable {
 
         this.heartBeatTask = new HeartBeatTask();
         this.electionTask = new ElectionTask();
+        // TODO: replicationTask
+        // this.replicationTask = new ReplicationTask()
     }
 
     @Override
@@ -191,12 +194,12 @@ public class Node implements LifeCycle, Runnable {
         matchIndex[] for each server, index of highest log entry known to be replicated on server
                     (initialized to 0, increases monotonically)
          */
-        this.nextIndex = new HashMap<>();
-        this.matchIndex = new HashMap<>();
+        this.nextIndex = new ConcurrentHashMap<>();
+        this.matchIndex = new ConcurrentHashMap<>();
         long initIndex = this.logModule.getLastIndex() + 1;
         for(NodeInfo info: addressBook.getPeerInfo()) {
             this.nextIndex.put(info.nodeId, initIndex);
-            this.matchIndex.put(info.nodeId, (long) 0);
+            this.matchIndex.put(info.nodeId, 0L);
         }
 
     }
@@ -289,6 +292,7 @@ public class Node implements LifeCycle, Runnable {
                         }
                         logger.info("election task received result: term {} voteGranted {}", result.term, result.voteGranted);
 
+                        // Response handling
                         if (RulesForServers.compareTermAndBecomeFollower(result.term, nodehook)) {
                             return 0;
                         }
@@ -420,5 +424,9 @@ public class Node implements LifeCycle, Runnable {
 
     public void setVotedFor(int votedFor) {
         this.votedFor = votedFor;
+    }
+
+    public long getNextIndex(int nodeId) {
+        return this.nextIndex.get(nodeId);
     }
 }
