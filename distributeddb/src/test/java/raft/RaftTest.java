@@ -5,10 +5,13 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import raft.nodemodule.AddressBook;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeConfig;
+import raft.nodemodule.NodeInfo;
 import raft.statemachinemodule.RaftState;
 
+import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -29,16 +32,20 @@ public class RaftTest {
 
     @Test
     public void testInitialElection() throws InterruptedException {
-        NodeConfig config1 = new NodeConfig(8258,
-                new String[]{"localhost:8259", "localhost:8260"});
-        NodeConfig config2 = new NodeConfig(8259,
-                new String[]{"localhost:8258", "localhost:8260"});
-        NodeConfig config3 = new NodeConfig(8260,
-                new String[]{"localhost:8259", "localhost:8258"});
+        NodeConfig config = new NodeConfig();
+
+        NodeInfo node1 = new NodeInfo(8258, 8258, "localhost");
+        NodeInfo node2 = new NodeInfo(8259, 8259, "localhost");
+        NodeInfo node3 = new NodeInfo(8260, 8260, "localhost");
+        NodeInfo[] allNodes = new NodeInfo[]{node1, node2, node3};
 
 
         // start nodes
-        Node[] nodes = {new Node(config1), new Node(config2), new Node(config3)};
+        Node[] nodes = {
+                new Node(config, new AddressBook(node1, allNodes)),
+                new Node(config, new AddressBook(node2, allNodes)),
+                new Node(config, new AddressBook(node3, allNodes))
+        };
         Thread[] nodeThreads = {new Thread(nodes[0]), new Thread(nodes[1]), new Thread(nodes[2])};
         for(int i = 0; i < nodes.length; i++) {
             nodeThreads[i].start();
