@@ -15,7 +15,7 @@ import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
-import raft.RuleSet.RulesForServers;
+import raft.ruleSet.RulesForServers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,11 +34,20 @@ public class Node implements LifeCycle, Runnable {
     public final static int NULL_VOTE = -1;
     public final int nodeId;
     public final Node nodehook;
+
     /* Engineering Variables*/
     // config for this node
     public final NodeConfig config;
-    // Peers
+
+    /* Peers
+    Peer may be down but never deleted
+    TODO: When add new PEER
+    add both RPC client, and adressBook
+     */
+    public final AddressBook addressBook;
     public ArrayList<RaftRpcClient> peers;
+
+
     public int rpcCount;
     private RaftConsensus consensus;
     private RaftLogModule logModule;
@@ -70,8 +79,9 @@ public class Node implements LifeCycle, Runnable {
     // Other
     private volatile boolean started;
 
-    public Node(NodeConfig config) {
-        this.nodeId = config.listenPort;
+    public Node(NodeConfig config, AddressBook addressBook) {
+        this.addressBook = addressBook;
+        this.nodeId = this.addressBook.getSelfInfo().nodeId;
         this.nodehook = this;
 
         this.commitIndex = 0;
@@ -91,11 +101,13 @@ public class Node implements LifeCycle, Runnable {
         /*
         Run the initilization of the server
          */
-        // create peer list
+        // create create Peer Client
         this.peers = new ArrayList<>();
-        for (NodeConfig.NodeAddress peer : this.config.peers) {
-            this.peers.add(new RaftRpcClient(peer.hostname, peer.port));
+        for (NodeInfo peer : this.addressBook.getPeerInfo()) {
+            this.peers.add(new RaftRpcClient(peer.hostname, peer.listenPort));
         }
+
+        // create thread pool
         this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
     }
 
@@ -105,7 +117,7 @@ public class Node implements LifeCycle, Runnable {
         Actual initial sequence
          */
         // run rpc server
-        this.rpcServer = new RaftRpcServer(this.config.listenPort, this);
+        this.rpcServer = new RaftRpcServer(this.addressBook.getSelfInfo().listenPort, this);
         this.threadPool.execute(rpcServer);
         this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
         this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
