@@ -22,6 +22,8 @@ public class RaftConsensus implements Consensus {
 
     @Override
     public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
+        // TODO: handle new joiner requestVote command
+        // TODO: when recieved unknown request, add it to addressBook?
 
         RulesForServers.compareTermAndBecomeFollower(args.term, this.nodehook);
 

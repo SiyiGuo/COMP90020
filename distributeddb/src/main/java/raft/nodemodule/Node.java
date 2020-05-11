@@ -63,8 +63,8 @@ public class Node implements LifeCycle, Runnable {
     // volatile state on leaders
 
     // reinitialized after election
-    private volatile HashMap<Integer, Integer> nextIndex;
-    private volatile HashMap<Integer, Integer> matchIndex;
+    private volatile HashMap<Integer, Long> nextIndex;
+    private volatile HashMap<Integer, Long> matchIndex;
 
     // time variable
     private volatile long lastHeartBeatTime = 0;
@@ -156,36 +156,49 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public ClientResponse handleClientRequest(ClientRequest req) {
+        /*
+        TODO:
+        If command received from client.
+
+        Append entry to local log
+
+        respond after entry applied to state machine
+         */
         return null;
     }
 
     // redirect to leader
     public ClientResponse redirect(ClientRequest req) {
+        int leaderId = addressBook.getLeaderId();
+        // TODO: somehow call the leader
+        // reutrn this.leader.handleCLientRequest(req)
         return null;
     }
 
     public void actionsWhenBecameLeader() {
         /*
         Leaders:
-        Upon election: send initial empty AppendEntries RPCs
-        (heartbeat) to each server; repeat during idle periods to
+        Upon election: send initial empty AppendEntries RPCs (heartbeat) to each server; repeat during idle periods to
         prevent election timeouts (§5.2)
         */
         sendEmptyAppendEntries();
 
         /*
-        TODO: Blocked by Peer Module
         Volatile state on leaders:
         (Reinitialized after election)
-        nextIndex[] for each server, index of the next log entry
-        to send to that server (initialized to leader
-        last log index + 1)
-        matchIndex[] for each server, index of highest log entry
-        known to be replicated on server
-        (initialized to 0, increases monotonically)
+        nextIndex[] for each server, index of the next log entry bto send to that server
+                    (initialized to leader last log index + 1)
+        matchIndex[] for each server, index of highest log entry known to be replicated on server
+                    (initialized to 0, increases monotonically)
          */
         this.nextIndex = new HashMap<>();
         this.matchIndex = new HashMap<>();
+        long initIndex = this.logModule.getLastIndex() + 1;
+        for(NodeInfo info: addressBook.getPeerInfo()) {
+            this.nextIndex.put(info.nodeId, initIndex);
+            this.matchIndex.put(info.nodeId, (long) 0);
+        }
+
     }
 
     public void sendEmptyAppendEntries() {
