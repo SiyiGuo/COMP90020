@@ -16,20 +16,15 @@ import raft.periodictask.HeartBeatTask;
 import raft.periodictask.LeaderLogReplicationTask;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
+import raft.ruleSet.RulesForServers;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
-import raft.ruleSet.RulesForServers;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /*
 Node keep state of the class
@@ -274,16 +269,15 @@ public class Node implements LifeCycle, Runnable {
         return this.peers.get(nodeId);
     }
 
-    public Collection<RaftRpcClient> getAllPeerRpfClient() {
-        return this.peers.values();
-    }
+    public Collection<RaftRpcClient> getAllPeerRpfClient() { return this.peers.values(); }
 
     public Collection<Long> getAllMatchIntex() {
         return this.matchIndex.values();
     }
+
     /*
-        Jungle of Getter and Setter
-         */
+    Jungle of Getter and Setter
+     */
     public long getLastHeartBeatTime() {
         return lastHeartBeatTime;
     }
@@ -312,10 +306,6 @@ public class Node implements LifeCycle, Runnable {
         return logModule;
     }
 
-    public void setLogModule(RaftLogModule logModule) {
-        this.logModule = logModule;
-    }
-
     public void setState(RaftState state) {
         this.state = state;
     }
@@ -336,13 +326,5 @@ public class Node implements LifeCycle, Runnable {
         this.votedFor = votedFor;
     }
 
-    public long getTimeOut() {
-        return timeOut;
-    }
-
-    public void setTimeOut(long timeOut) {
-        this.timeOut = timeOut;
-    }
-
-
+    public long getTimeOut() { return timeOut; }
 }

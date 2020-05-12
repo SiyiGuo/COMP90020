@@ -65,7 +65,7 @@ public class LeaderLogReplicationTask implements Runnable {
                     this.replicateLog(nodeInfo);
                 }
                 return;
-            });
+            }, false);
         }
     }
     @Override
