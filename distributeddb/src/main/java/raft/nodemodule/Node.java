@@ -11,6 +11,8 @@ import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
 import raft.logmodule.RaftLogModule;
+import raft.periodictask.ElectionTask;
+import raft.periodictask.HeartBeatTask;
 import raft.periodictask.LeaderLogReplicationTask;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
@@ -94,8 +96,8 @@ public class Node implements LifeCycle, Runnable {
         this.config = config;
         this.rpcCount = 0;
 
-        this.heartBeatTask = new HeartBeatTask();
-        this.electionTask = new ElectionTask();
+        this.heartBeatTask = new HeartBeatTask(this);
+        this.electionTask = new ElectionTask(this);
         this.replicationTask = new LeaderLogReplicationTask(this);
         // TODO: replicationTask
         // this.replicationTask = new ReplicationTask()
@@ -242,128 +244,6 @@ public class Node implements LifeCycle, Runnable {
         }
     }
 
-    class ElectionTask implements Runnable {
-        // nested class such that can use Node's private variable
-        @Override
-        public void run() {
-            // look into time stamp
-            if (state == RaftState.LEADER) return;
-
-            /*
-            Work as Follower / Candidate
-            Followers (§5.2): If election timeout elapses without receiving AppendEntries
-            RPC from current leader or granting vote to candidate:
-            convert to candidate
-            Candidates (§5.2): If election timeout elapses: start new election
-             */
-            // wait for a random amount of variable
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastElectionTime < timeOut) return;
-
-            /*
-           start election.
-            */
-            lastElectionTime = System.currentTimeMillis();
-            setRandomTimeout();
-
-            currentTerm += 1; // increments its current term
-            state = RaftState.CANDIDATE; // transition sot candidate state
-            votedFor = nodeId; // vote for itself
-
-            //RequestVoteRPC in parallel to other peers
-            ArrayList<Future> results = new ArrayList<>();
-            for (RaftRpcClient peer : peers.values()) {
-                results.add(threadPool.submit(() -> {
-                    try {
-                        RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast().term);
-                        return peer.requestVote(request);
-                    } catch (Exception e) {
-                        logger.error(e);
-                        return null;
-                    }
-                }));
-            }
-
-            // receive RequestVoteRpc Result
-            AtomicInteger receivedVote = new AtomicInteger(0);
-            CountDownLatch countDown = new CountDownLatch(results.size());
-            for (Future peerResult : results) {
-                threadPool.submit(() -> {
-                    try {
-                        if (state == RaftState.FOLLOWER) return -1;
-                        RaftRequestVoteResult result = (RaftRequestVoteResult) peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, MILLISECONDS);
-                        if (result == null) {
-                            return -1;
-                        }
-                        logger.info("election task received result: term {} voteGranted {}", result.term, result.voteGranted);
-
-                        // Response handling
-                        if (RulesForServers.compareTermAndBecomeFollower(result.term, nodehook)) {
-                            return 0;
-                        }
-
-                        // collect vote result
-                        if (result.voteGranted) {
-                            receivedVote.incrementAndGet();
-                        }
-                        return 0;
-                    } catch (Exception e) {
-                        logger.error("Recieve Request Vote result fail, error: ", e);
-                        return -1;
-                    } finally {
-                        countDown.countDown();
-                    }
-                });
-            }
-
-            try {
-                // wait for the async result came back
-                // you need to wait for atleast ELECTION_TIMEOUT_MIN to collect result
-                countDown.await(NodeConfig.ELECTION_TIMEOUT_MIN, MILLISECONDS);
-            } catch (InterruptedException e) {
-                logger.warn("Node {} election task interrupted", nodeId);
-            }
-
-            // All servers:
-            // if RPC request or response contains term T > currentTerm, set currentTerm and convert to follower.
-            if (state == RaftState.FOLLOWER) {
-                return;
-            }
-
-            // Candidate: if votes received from majority of servers, become leader
-            System.out.println("election received vote " + receivedVote.intValue());
-            // include myself, this is the majority vote
-            if (addressBook.isMajorityVote(receivedVote.intValue())) {
-                state = RaftState.LEADER;
-                actionsWhenBecameLeader();
-            }
-
-            // Candidate: if election timeout elapses: start new election
-            votedFor = NULL_VOTE;
-        }
-    }
-
-    /*
-    Invoked by leader to replicate log entries. Also used as heartbeat
-     */
-    class HeartBeatTask implements Runnable {
-        @Override
-        public void run() {
-            if (state != RaftState.LEADER) {
-                return;
-            }
-
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastHeartBeatTime < NodeConfig.HEARTBEAT_INTERVAL_MS) {
-                return;
-            }
-            lastHeartBeatTime = System.currentTimeMillis();
-
-            // Send Out Heartbeat
-            sendEmptyAppendEntries();
-        }
-    }
-
     public void setRandomTimeout() {
         this.timeOut = ThreadLocalRandom.current().nextLong(NodeConfig.ELECTION_TIMEOUT_RANGE) + NodeConfig.ELECTION_TIMEOUT_MIN;
     }
@@ -375,6 +255,32 @@ public class Node implements LifeCycle, Runnable {
         );
     }
 
+    /*
+    Out own getter and setter
+     */
+    public long getNodeNextIndex(int nodeId) {
+        return this.nextIndex.get(nodeId);
+    }
+
+    public void updateNodeNextIndex(int nodeId, long newNextIndex) {
+        this.nextIndex.put(nodeId, newNextIndex);
+    }
+
+    public void updateMatchIndex(int nodeId, long newMatchIndex) {
+        this.matchIndex.put(nodeId, newMatchIndex);
+    }
+
+    public RaftRpcClient getNodeRpcClient(int nodeId) {
+        return this.peers.get(nodeId);
+    }
+
+    public Collection<RaftRpcClient> getAllPeerRpfClient() {
+        return this.peers.values();
+    }
+
+    public Collection<Long> getAllMatchIntex() {
+        return this.matchIndex.values();
+    }
     /*
         Jungle of Getter and Setter
          */
@@ -430,23 +336,13 @@ public class Node implements LifeCycle, Runnable {
         this.votedFor = votedFor;
     }
 
-    public long getNodeNextIndex(int nodeId) {
-        return this.nextIndex.get(nodeId);
+    public long getTimeOut() {
+        return timeOut;
     }
 
-    public void updateNodeNextIndex(int nodeId, long newNextIndex) {
-        this.nextIndex.put(nodeId, newNextIndex);
+    public void setTimeOut(long timeOut) {
+        this.timeOut = timeOut;
     }
 
-    public void updateMatchIndex(int nodeId, long newMatchIndex) {
-        this.matchIndex.put(nodeId, newMatchIndex);
-    }
 
-    public RaftRpcClient getNodeRpcClient(int nodeId) {
-        return this.peers.get(nodeId);
-    }
-
-    public Collection<Long> getAllMatchIntex() {
-        return this.matchIndex.values();
-    }
 }

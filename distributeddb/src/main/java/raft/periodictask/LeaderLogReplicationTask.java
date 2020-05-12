@@ -2,7 +2,6 @@ package raft.periodictask;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tomcat.util.digester.RuleSet;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.nodemodule.Node;
@@ -44,6 +43,8 @@ public class LeaderLogReplicationTask implements Runnable {
                         this.node.getCommitIndex()
                 );
                 RaftAppendEntriesResult result = this.node.getNodeRpcClient(nodeInfo.nodeId).appendEntries(request);
+                logger.debug("Node{} lastIndex{} nodeNextIndex{} AppendEntries Response {}"
+                        , nodeInfo.nodeId, lastIndex, nodeNextIndex, result);
 
                 if (RulesForServers.compareTermAndBecomeFollower(result.term, this.node)) {
                     return;
