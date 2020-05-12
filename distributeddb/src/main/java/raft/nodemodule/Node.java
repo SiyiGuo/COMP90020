@@ -11,6 +11,7 @@ import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
 import raft.logmodule.RaftLogModule;
+import raft.periodictask.LeaderLogReplicationTask;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
 import raft.statemachinemodule.RaftState;
@@ -75,6 +76,7 @@ public class Node implements LifeCycle, Runnable {
     // Task
     private HeartBeatTask heartBeatTask;
     private ElectionTask electionTask;
+    private LeaderLogReplicationTask replicationTask;
     public RaftThreadPool threadPool;
     /* RPC related*/
     private RaftRpcServer rpcServer;
@@ -94,6 +96,7 @@ public class Node implements LifeCycle, Runnable {
 
         this.heartBeatTask = new HeartBeatTask();
         this.electionTask = new ElectionTask();
+        this.replicationTask = new LeaderLogReplicationTask(this);
         // TODO: replicationTask
         // this.replicationTask = new ReplicationTask()
     }
@@ -125,6 +128,7 @@ public class Node implements LifeCycle, Runnable {
         this.threadPool.execute(rpcServer);
         this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
         this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // start 3 module
         this.logModule = new RaftLogModule();

@@ -2,10 +2,12 @@ package raft.periodictask;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tomcat.util.digester.RuleSet;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeInfo;
+import raft.ruleSet.RulesForServers;
 import raft.statemachinemodule.RaftState;
 
 import java.util.ArrayList;
@@ -19,50 +21,60 @@ public class LeaderLogReplicationTask implements Runnable {
         this.node = nodehook;
     }
 
-    @Override
-    public void run() {
-        if (this.node.getState() != RaftState.LEADER) {
-            return;
-        }
-        /*
-        TODO:
-
-            •
-
-         */
-        for(NodeInfo nodeInfo: this.node.addressBook.getPeerInfo()) {
-            if (this.node.getLogModule().getLastIndex() >= this.node.getNodeNextIndex(nodeInfo.nodeId)) {
+    public void replicateLog(NodeInfo nodeInfo) {
+        if (this.node.getLogModule().getLastIndex() >= this.node.getNodeNextIndex(nodeInfo.nodeId)) {
                 /*
                 If last log index ≥ nextIndex for a follower: send
                 AppendEntries RPC with log entries starting at nextIndex
                  */
 
-                // prepare the entry
-                this.node.threadPool.submit(() -> {
-                    RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
-                            this.node.getCurrentTerm(),
-                            this.node.nodeId,
-                            this.node.getLogModule().getLastIndex(),
-                            this.node.getLogModule().getLast().term,
-                            this.node.getLogModule().getLogsOnStartIndex(
-                                    this.node.getNodeNextIndex(nodeInfo.nodeId)),
-                            this.node.getCommitIndex()
-                    );
-                    RaftAppendEntriesResult result = this.node.getNodeRpcClient(nodeInfo.nodeId).appendEntries(request);
+            // prepare the entry
+            this.node.threadPool.execute(() -> {
+                if (!(this.node.getState() == RaftState.LEADER)) {
+                    return;
+                }
 
-                    if (result.success) {
-                        // • If successful: update nextIndex and matchIndex for follower (§5.3)
-                        long newMatchIndex = this.node.getLogModule().getLastIndex();
-                        long newNextIndex = newMatchIndex + 1;
-                        this.node.updateMatchIndex(nodeInfo.nodeId, newMatchIndex);
-                        this.node.updateNodeNextIndex(nodeInfo.nodeId, newNextIndex);
-                    } else {
-                        // If AppendEntries fails because of log inconsistency:
-                        // decrement nextIndex and retry (§5.3) put into the queue?
-                    }
-                    return null;
-                });
-            }
+                RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
+                        this.node.getCurrentTerm(),
+                        this.node.nodeId,
+                        this.node.getLogModule().getLastIndex(),
+                        this.node.getLogModule().getLast().term,
+                        this.node.getLogModule().getLogsOnStartIndex(
+                                this.node.getNodeNextIndex(nodeInfo.nodeId)),
+                        this.node.getCommitIndex()
+                );
+                RaftAppendEntriesResult result = this.node.getNodeRpcClient(nodeInfo.nodeId).appendEntries(request);
+
+                if (RulesForServers.compareTermAndBecomeFollower(result.term, this.node)) {
+                    return;
+                }
+
+                if (result.success) {
+                    // • If successful: update nextIndex and matchIndex for follower (§5.3)
+                    long newMatchIndex = this.node.getLogModule().getLastIndex();
+                    long newNextIndex = newMatchIndex + 1;
+                    this.node.updateMatchIndex(nodeInfo.nodeId, newMatchIndex);
+                    this.node.updateNodeNextIndex(nodeInfo.nodeId, newNextIndex);
+                } else {
+                    // If AppendEntries fails because of log inconsistency:
+                    // decrement nextIndex and retry (§5.3)
+                    long newNextIndex = this.node.getNodeNextIndex(nodeInfo.nodeId) - 1;
+                    this.node.updateNodeNextIndex(nodeInfo.nodeId, newNextIndex);
+                    // and retry
+                    this.replicateLog(nodeInfo);
+                }
+                return;
+            });
+        }
+    }
+    @Override
+    public void run() {
+        if (this.node.getState() != RaftState.LEADER) {
+            return;
+        }
+        for(NodeInfo nodeInfo: this.node.addressBook.getPeerInfo()) {
+            // this might be called recursively
+            this.replicateLog(nodeInfo);
         }
 
         /*
