@@ -3,6 +3,7 @@ package raft.logmodule;
 import raft.LogModule;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class RaftLogModule implements LogModule {
     private ArrayList<RaftLogEntry> logs;
@@ -31,6 +32,11 @@ public class RaftLogModule implements LogModule {
         // if an existing entry conflicts with a new one (same index but different terms)
         // delete the existing entry and all that follow it
         this.logs.subList(Math.toIntExact(startIndex), this.logs.size()).clear();
+    }
+
+    // [startIndex, endIndex) inclusive, exclusive
+    public List<RaftLogEntry> getLogsOnStartIndex(Long startIndex) {
+        return this.logs.subList(Math.toIntExact(startIndex), this.logs.size());
     }
 
     @Override

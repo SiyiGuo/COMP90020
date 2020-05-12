@@ -2,6 +2,8 @@ package raft.periodictask;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import raft.consensusmodule.RaftAppendEntriesArgs;
+import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeInfo;
 import raft.statemachinemodule.RaftState;
@@ -24,18 +26,42 @@ public class LeaderLogReplicationTask implements Runnable {
         }
         /*
         TODO:
-            • If successful: update nextIndex and matchIndex for
-            follower (§5.3)
-            • If AppendEntries fails because of log inconsistency:
-            decrement nextIndex and retry (§5.3)
+
+            •
 
          */
         for(NodeInfo nodeInfo: this.node.addressBook.getPeerInfo()) {
-            if (this.node.getLogModule().getLastIndex() >= this.node.getNextIndex(nodeInfo.nodeId)) {
+            if (this.node.getLogModule().getLastIndex() >= this.node.getNodeNextIndex(nodeInfo.nodeId)) {
                 /*
                 If last log index ≥ nextIndex for a follower: send
                 AppendEntries RPC with log entries starting at nextIndex
                  */
+
+                // prepare the entry
+                this.node.threadPool.submit(() -> {
+                    RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
+                            this.node.getCurrentTerm(),
+                            this.node.nodeId,
+                            this.node.getLogModule().getLastIndex(),
+                            this.node.getLogModule().getLast().term,
+                            this.node.getLogModule().getLogsOnStartIndex(
+                                    this.node.getNodeNextIndex(nodeInfo.nodeId)),
+                            this.node.getCommitIndex()
+                    );
+                    RaftAppendEntriesResult result = this.node.getNodeRpcClient(nodeInfo.nodeId).appendEntries(request);
+
+                    if (result.success) {
+                        // • If successful: update nextIndex and matchIndex for follower (§5.3)
+                        long newMatchIndex = this.node.getLogModule().getLastIndex();
+                        long newNextIndex = newMatchIndex + 1;
+                        this.node.updateMatchIndex(nodeInfo.nodeId, newMatchIndex);
+                        this.node.updateNodeNextIndex(nodeInfo.nodeId, newNextIndex);
+                    } else {
+                        // If AppendEntries fails because of log inconsistency:
+                        // decrement nextIndex and retry (§5.3) put into the queue?
+                    }
+                    return null;
+                });
             }
         }
 

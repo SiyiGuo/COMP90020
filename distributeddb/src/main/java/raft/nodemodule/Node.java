@@ -75,7 +75,7 @@ public class Node implements LifeCycle, Runnable {
     // Task
     private HeartBeatTask heartBeatTask;
     private ElectionTask electionTask;
-    private RaftThreadPool threadPool;
+    public RaftThreadPool threadPool;
     /* RPC related*/
     private RaftRpcServer rpcServer;
     // Other
@@ -426,9 +426,22 @@ public class Node implements LifeCycle, Runnable {
         this.votedFor = votedFor;
     }
 
-    public long getNextIndex(int nodeId) {
+    public long getNodeNextIndex(int nodeId) {
         return this.nextIndex.get(nodeId);
     }
+
+    public void updateNodeNextIndex(int nodeId, long newNextIndex) {
+        this.nextIndex.put(nodeId, newNextIndex);
+    }
+
+    public void updateMatchIndex(int nodeId, long newMatchIndex) {
+        this.matchIndex.put(nodeId, newMatchIndex);
+    }
+
+    public RaftRpcClient getNodeRpcClient(int nodeId) {
+        return this.peers.get(nodeId);
+    }
+
     public Collection<Long> getAllMatchIntex() {
         return this.matchIndex.values();
     }
