@@ -18,6 +18,7 @@ import raft.statemachinemodule.RaftStateMachine;
 import raft.ruleSet.RulesForServers;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -46,7 +47,7 @@ public class Node implements LifeCycle, Runnable {
     add both RPC client, and adressBook
      */
     public final AddressBook addressBook;
-    public ArrayList<RaftRpcClient> peers;
+    public HashMap<Integer, RaftRpcClient> peers;
 
 
     public int rpcCount;
@@ -105,9 +106,9 @@ public class Node implements LifeCycle, Runnable {
         Run the initilization of the server
          */
         // create create Peer Client
-        this.peers = new ArrayList<>();
+        this.peers = new HashMap<>();
         for (NodeInfo peer : this.addressBook.getPeerInfo()) {
-            this.peers.add(new RaftRpcClient(peer.hostname, peer.listenPort));
+            this.peers.put(peer.nodeId, new RaftRpcClient(peer.hostname, peer.listenPort));
         }
 
         // create thread pool
@@ -213,7 +214,7 @@ public class Node implements LifeCycle, Runnable {
         /*
         Start Append empty entries
          */
-        for (RaftRpcClient peer : peers) {
+        for (RaftRpcClient peer : peers.values()) {
             threadPool.execute(() -> {
                 try {
                     if(this.state != RaftState.LEADER) {
@@ -267,7 +268,7 @@ public class Node implements LifeCycle, Runnable {
 
             //RequestVoteRPC in parallel to other peers
             ArrayList<Future> results = new ArrayList<>();
-            for (RaftRpcClient peer : peers) {
+            for (RaftRpcClient peer : peers.values()) {
                 results.add(threadPool.submit(() -> {
                     try {
                         RaftRequestVoteArgs request = new RaftRequestVoteArgs(currentTerm, nodeId, logModule.getLastIndex(), logModule.getLast().term);
@@ -328,9 +329,8 @@ public class Node implements LifeCycle, Runnable {
             // Candidate: if votes received from majority of servers, become leader
             System.out.println("election received vote " + receivedVote.intValue());
             // include myself, this is the majority vote
-            if (receivedVote.intValue() >= (peers.size() / 2)) {
+            if (addressBook.isMajorityVote(receivedVote.intValue())) {
                 state = RaftState.LEADER;
-
                 actionsWhenBecameLeader();
             }
 
@@ -428,5 +428,8 @@ public class Node implements LifeCycle, Runnable {
 
     public long getNextIndex(int nodeId) {
         return this.nextIndex.get(nodeId);
+    }
+    public Collection<Long> getAllMatchIntex() {
+        return this.matchIndex.values();
     }
 }

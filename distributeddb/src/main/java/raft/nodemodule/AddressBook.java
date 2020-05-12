@@ -46,4 +46,11 @@ public class AddressBook {
     public void setLeaderId(int leaderId) {
         this.leaderId = leaderId;
     }
+
+    // Determine whether we reached majority vote
+    public boolean isMajorityVote(int number) {
+        // 1+ 5 peer. ceil(5/2) = 3 + 1 = majority of 5 nodes
+        // 1+6peer. ceil(6/2)) = 3+1 = majority of 7 nodes
+        return number >= Math.ceil(this.peers.size() / 2);
+    }
 }
