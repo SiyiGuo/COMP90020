@@ -11,7 +11,6 @@ import raft.ruleSet.RulesForServers;
 import raft.statemachinemodule.RaftState;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 public class LeaderLogReplicationTask implements Runnable {
     public final static Logger logger = LogManager.getLogger(LeaderLogReplicationTask.class);
@@ -22,12 +21,14 @@ public class LeaderLogReplicationTask implements Runnable {
     }
 
     public void replicateLog(NodeInfo nodeInfo) {
-        if (this.node.getLogModule().getLastIndex() >= this.node.getNodeNextIndex(nodeInfo.nodeId)) {
-                /*
-                If last log index ≥ nextIndex for a follower: send
-                AppendEntries RPC with log entries starting at nextIndex
-                 */
-
+         /*
+        If last log index ≥ nextIndex for a follower: send
+        AppendEntries RPC with log entries starting at nextIndex
+         */
+        long lastIndex = this.node.getLogModule().getLastIndex();
+        long nodeNextIndex = this.node.getNodeNextIndex(nodeInfo.nodeId);
+        if (lastIndex >= nodeNextIndex) {
+            logger.debug("Node{} lastIndex{} nodeNextIndex{}", nodeInfo.nodeId, lastIndex, nodeNextIndex);
             // prepare the entry
             this.node.threadPool.execute(() -> {
                 if (!(this.node.getState() == RaftState.LEADER)) {
@@ -37,10 +38,9 @@ public class LeaderLogReplicationTask implements Runnable {
                 RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
                         this.node.getCurrentTerm(),
                         this.node.nodeId,
-                        this.node.getLogModule().getLastIndex(),
+                        lastIndex,
                         this.node.getLogModule().getLast().term,
-                        this.node.getLogModule().getLogsOnStartIndex(
-                                this.node.getNodeNextIndex(nodeInfo.nodeId)),
+                        this.node.getLogModule().getLogsOnStartIndex(nodeNextIndex),
                         this.node.getCommitIndex()
                 );
                 RaftAppendEntriesResult result = this.node.getNodeRpcClient(nodeInfo.nodeId).appendEntries(request);
@@ -58,7 +58,7 @@ public class LeaderLogReplicationTask implements Runnable {
                 } else {
                     // If AppendEntries fails because of log inconsistency:
                     // decrement nextIndex and retry (§5.3)
-                    long newNextIndex = this.node.getNodeNextIndex(nodeInfo.nodeId) - 1;
+                    long newNextIndex = nodeNextIndex - 1;
                     this.node.updateNodeNextIndex(nodeInfo.nodeId, newNextIndex);
                     // and retry
                     this.replicateLog(nodeInfo);

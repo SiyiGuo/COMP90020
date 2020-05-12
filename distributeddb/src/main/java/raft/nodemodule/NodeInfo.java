@@ -14,4 +14,9 @@ public class NodeInfo {
         this.listenPort = listenPort;
         this.hostname = hostname;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Node: " + nodeId);
+    }
 }
