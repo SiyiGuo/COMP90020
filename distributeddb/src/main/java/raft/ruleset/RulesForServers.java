@@ -1,4 +1,4 @@
-package raft.RuleSet;
+package raft.ruleset;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,6 +7,14 @@ import raft.statemachinemodule.RaftState;
 
 /*
 A collection of rule applied acoording to page 4
+
+Rule implementation Priority:
+All Server > Candidate > Follower > Receiver Implementation > Leader
+
+THis is because candidate can become follower when handling request
+ANd only follow need to reply.
+
+Recevier Implementation is only applied on follower.
  */
 public class RulesForServers {
     public static Logger logger = LogManager.getLogger(RulesForServers.class);

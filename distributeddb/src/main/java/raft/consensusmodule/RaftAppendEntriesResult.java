@@ -11,4 +11,9 @@ public class RaftAppendEntriesResult {
         this.term = term;
         this.success = success;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Term: %s success: %s", this.term, this.success);
+    }
 }

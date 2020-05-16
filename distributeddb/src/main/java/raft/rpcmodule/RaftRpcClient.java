@@ -61,7 +61,9 @@ public class RaftRpcClient {
         for (RaftLogEntry entry : args.entries) {
             LogEntry logEntry = LogEntry.newBuilder()
                     .setTerm(entry.term)
+                    .setIndex(entry.index)
                     .setValue(entry.value)
+                    .setCommand(entry.command.name())
                     .build();
             builder.addEntries(logEntry);
         }

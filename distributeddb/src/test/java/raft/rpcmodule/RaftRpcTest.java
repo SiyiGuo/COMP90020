@@ -1,5 +1,6 @@
 package raft.rpcmodule;
 
+import application.storage.InMemoryStorage;
 import org.junit.Assert;
 import org.junit.Test;
 import raft.consensusmodule.RaftAppendEntriesArgs;
@@ -7,8 +8,10 @@ import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
+import raft.nodemodule.AddressBook;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeConfig;
+import raft.nodemodule.NodeInfo;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,11 +20,10 @@ public class RaftRpcTest {
 
     @Test
     public void RequestVoteRpcTest() {
-        NodeConfig config = new NodeConfig(
-               8213,
-                new String[]{}
-        );
-        Node node = new Node(config);
+        NodeConfig config = new NodeConfig();
+        AddressBook addressBook = new AddressBook(new NodeInfo(813, 8213, "localhost"), new NodeInfo[]{});
+        Node node = new Node(config, addressBook, new InMemoryStorage());
+
         Thread serverThread = new Thread(node);
         serverThread.start();
 
@@ -40,12 +42,12 @@ public class RaftRpcTest {
         node.destroy();
     }
 
+    @Test
     public void AppendEntriesRpcTest() {
-        NodeConfig config = new NodeConfig(
-                8213,
-                new String[]{}
-        );
-        Node node = new Node(config);
+        NodeConfig config = new NodeConfig();
+        AddressBook addressBook = new AddressBook(new NodeInfo(813, 8213, "localhost"), new NodeInfo[]{});
+
+        Node node = new Node(config, addressBook, new InMemoryStorage());
         Thread serverThread = new Thread(node);
         serverThread.start();
 
