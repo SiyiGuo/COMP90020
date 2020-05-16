@@ -77,7 +77,7 @@ public class Node implements LifeCycle, Runnable {
     private HeartBeatTask heartBeatTask;
     private ElectionTask electionTask;
     private LeaderLogReplicationTask replicationTask;
-    public RaftThreadPool threadPool;
+//    public RaftThreadPool threadPool;
     /* RPC related*/
     private RaftRpcServer rpcServer;
     // Other
@@ -116,7 +116,7 @@ public class Node implements LifeCycle, Runnable {
         }
 
         // create thread pool
-        this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
+//        this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
     }
 
     public void startNodeRunning() {
@@ -127,17 +127,16 @@ public class Node implements LifeCycle, Runnable {
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.addressBook.getSelfInfo().listenPort, this);
         // private thread pool
-        this.threadPool.execute(rpcServer);
-        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
-        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
+//        this.threadPool.execute(rpcServer);
+//        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+//        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+//        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // static threadpool
-        // TODO: why static global threadpool not working?
-//        RaftStaticThreadPool.execute(rpcServer);
-//        RaftStaticThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-//        RaftStaticThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
-//        RaftStaticThreadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
+        RaftStaticThreadPool.execute(rpcServer);
+        RaftStaticThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+        RaftStaticThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+        RaftStaticThreadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // start 3 module
         this.logModule = new RaftLogModule();
@@ -238,7 +237,7 @@ public class Node implements LifeCycle, Runnable {
         Start Append empty entries
          */
         for (RaftRpcClient peer : peers.values()) {
-            threadPool.execute(() -> {
+            RaftStaticThreadPool.execute(() -> {
                 try {
                     if(this.state != RaftState.LEADER) {
                         return;
