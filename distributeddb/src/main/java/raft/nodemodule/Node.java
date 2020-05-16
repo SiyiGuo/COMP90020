@@ -133,6 +133,7 @@ public class Node implements LifeCycle, Runnable {
         this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // static threadpool
+        // TODO: why static global threadpool not working?
 //        RaftStaticThreadPool.execute(rpcServer);
 //        RaftStaticThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
 //        RaftStaticThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
