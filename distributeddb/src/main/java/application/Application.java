@@ -1,33 +1,33 @@
 package application;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-@SpringBootApplication
-@RestController
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 public class Application {
-
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-    }
+        Options options = new Options();
+        Option programMode = new Option("p", "mode", true, "Peer or Controller");
+        programMode.setRequired(true);
+        options.addOption(programMode);
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            System.out.println("-"+e.getMessage());
+            formatter.printHelp("my-program", options);
 
-    @RequestMapping("/")
-    public String home() {
-        return "Hello Docker World";
+            System.exit(1);
+            return;
+        }
+        String mode = cmd.getOptionValue("mode");
+        System.out.println(mode);
     }
-
-    @RequestMapping(value = "/get", method = RequestMethod.GET)
-    public String get(@RequestParam String key) {
-        return key;
-    }
-
-    @RequestMapping(value = "/put", method = RequestMethod.POST)
-    public String put(@RequestParam String key, @RequestParam String value) {
-        return key + value;
-    }
-
 }
