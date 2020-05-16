@@ -122,10 +122,10 @@ public class Node implements LifeCycle, Runnable {
     public void startNodeRunning() {
         /*
         Actual initial sequence
-        Actual initial sequence
          */
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.addressBook.getSelfInfo().listenPort, this);
+        
         // private thread pool
 //        this.threadPool.execute(rpcServer);
 //        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
