@@ -50,7 +50,7 @@ public class RaftLogModule implements LogModule {
         check assumption here
         we aussme is there is no log, return term0, index0 and no value
          */
-        return new RaftLogEntry(0, 0, RaftCommand.GET, "");
+        return new RaftLogEntry(0, 0, RaftCommand.GET, "", "");
     }
 
     @Override

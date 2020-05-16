@@ -116,7 +116,7 @@ public class Node implements LifeCycle, Runnable {
         }
 
         // create thread pool
-        //this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
+        this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
     }
 
     public void startNodeRunning() {
@@ -127,16 +127,16 @@ public class Node implements LifeCycle, Runnable {
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.addressBook.getSelfInfo().listenPort, this);
         // private thread pool
-//        this.threadPool.execute(rpcServer);
-//        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-//        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
-//        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
+        this.threadPool.execute(rpcServer);
+        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // static threadpool
-        RaftStaticThreadPool.execute(rpcServer);
-        RaftStaticThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-        RaftStaticThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
-        RaftStaticThreadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
+//        RaftStaticThreadPool.execute(rpcServer);
+//        RaftStaticThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+//        RaftStaticThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+//        RaftStaticThreadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // start 3 module
         this.logModule = new RaftLogModule();
@@ -171,20 +171,30 @@ public class Node implements LifeCycle, Runnable {
         return this.consensus.handleAppendEntries(args);
     }
 
-    public ClientResponse handleClientRequest(ClientRequest req) {
+    public RaftClientResponse handleClientRequest(RaftClientRequest req) {
         /*
         TODO:
         If command received from client.
 
-        Append entry to local log
 
-        respond after entry applied to state machine
          */
-        return null;
+        if (this.nodeId == this.addressBook.getLeaderId()) {
+            // Append entry to local log
+            this.logModule.append(new RaftLogEntry(
+                    this.getCurrentTerm(),
+                    this.logModule.getLastIndex(),
+                    req.command,
+                    req.key,
+                    req.value
+            ));
+            // respond after entry applied to state machine
+            // TODO: when?
+        }
+        return this.redirect(req);
     }
 
     // redirect to leader
-    public ClientResponse redirect(ClientRequest req) {
+    public RaftClientResponse redirect(RaftClientRequest req) {
         int leaderId = addressBook.getLeaderId();
         // TODO: somehow call the leader
         // reutrn this.leader.handleCLientRequest(req)
@@ -242,7 +252,7 @@ public class Node implements LifeCycle, Runnable {
                             commitIndex
                     );
                     RaftAppendEntriesResult result = peer.appendEntries(request);
-                    RulesForServers.compareTermAndBecomeFollower(request.term, nodehook);
+                    RulesForServers.compareTermAndBecomeFollower(result.term, nodehook);
                 } catch (Exception e) {
                     logger.error("HeadBeat Task RPF fail.");
                 }

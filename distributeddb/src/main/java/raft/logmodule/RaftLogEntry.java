@@ -4,20 +4,22 @@ import raft.statemachinemodule.RaftCommand;
 
 public class RaftLogEntry {
     public final long term;
+    public final String key;
     public final String value;
     public final RaftCommand command;
     public final long index;
 
-    public RaftLogEntry(long term, long index, RaftCommand command, String value) {
+    public RaftLogEntry(long term, long index, RaftCommand command, String key, String value) {
         this.term = term;
         this.index = index;
         this.command = command;
-        this.value = value; // format: key:value
+        this.key = key;
+        this.value = value;
     }
 
     @Override
     public String toString() {
-        return String.format("LogEntry.term:%s index:%s command: %s, value:%s",
-                this.term, this.index, command, this.value);
+        return String.format("LogEntry.term:%s index:%s command: %s, key:%s, value:%s",
+                this.term, this.index, command, this.key, this.value);
     }
 }

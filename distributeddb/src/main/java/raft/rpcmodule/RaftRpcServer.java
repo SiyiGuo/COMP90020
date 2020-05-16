@@ -26,15 +26,15 @@ public class RaftRpcServer implements Runnable {
                 .build()
                 .start();
         logger.info("-------------------- server start, waiting for connection----------------");
-//        Runtime.getRuntime().addShutdownHook(new Thread() {
-//            @Override
-//            public void run() {
-//
-//                System.err.println("*** shutting down gRPC server since JVM is shutting down");
-//                RequestVoteServer.this.stop();
-//                System.err.println("*** server shut down");
-//            }
-//        });
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+
+                System.err.println("*** shutting down gRPC server since JVM is shutting down");
+                RaftRpcServer.this.stop();
+                System.err.println("*** server shut down");
+            }
+        });
     }
 
     public void stop() {
