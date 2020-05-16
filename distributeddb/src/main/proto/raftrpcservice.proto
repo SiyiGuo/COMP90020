@@ -16,6 +16,7 @@ message LogEntry {
     int64 term = 1;
     int64 index = 2;
     string value = 3;
+    string command = 4;
 }
 
 //RequestVote RPC

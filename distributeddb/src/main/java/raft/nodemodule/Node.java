@@ -1,5 +1,6 @@
 package raft.nodemodule;
 
+import application.storage.Storage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
@@ -52,6 +53,7 @@ public class Node implements LifeCycle, Runnable {
     private RaftConsensus consensus;
     private RaftLogModule logModule;
     private RaftStateMachine stateMachine;
+    private Storage storage;
     //state of this node
     private volatile RaftState state;
     //Persistent state on all servers
@@ -80,8 +82,9 @@ public class Node implements LifeCycle, Runnable {
     // Other
     private volatile boolean started;
 
-    public Node(NodeConfig config, AddressBook addressBook) {
+    public Node(NodeConfig config, AddressBook addressBook, Storage storage) {
         this.addressBook = addressBook;
+        this.storage = storage;
         this.nodeId = this.addressBook.getSelfInfo().nodeId;
         this.nodehook = this;
 
@@ -130,7 +133,7 @@ public class Node implements LifeCycle, Runnable {
         // start 3 module
         this.logModule = new RaftLogModule();
         this.consensus = new RaftConsensus(this);
-        this.stateMachine = new RaftStateMachine();
+        this.stateMachine = new RaftStateMachine(this.storage);
     }
 
     @Override
@@ -327,4 +330,28 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public long getTimeOut() { return timeOut; }
+
+    public RaftConsensus getConsensus() {
+        return consensus;
+    }
+
+    public RaftStateMachine getStateMachine() {
+        return stateMachine;
+    }
+
+    public Storage getStorage() {
+        return storage;
+    }
+
+    public long getLastApplied() {
+        return lastApplied;
+    }
+
+    public ConcurrentHashMap<Integer, Long> getNextIndex() {
+        return nextIndex;
+    }
+
+    public ConcurrentHashMap<Integer, Long> getMatchIndex() {
+        return matchIndex;
+    }
 }

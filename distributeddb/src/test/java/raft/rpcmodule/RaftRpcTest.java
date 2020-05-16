@@ -1,5 +1,6 @@
 package raft.rpcmodule;
 
+import application.storage.InMemoryStorage;
 import org.junit.Assert;
 import org.junit.Test;
 import raft.consensusmodule.RaftAppendEntriesArgs;
@@ -21,7 +22,7 @@ public class RaftRpcTest {
     public void RequestVoteRpcTest() {
         NodeConfig config = new NodeConfig();
         AddressBook addressBook = new AddressBook(new NodeInfo(813, 8213, "localhost"), new NodeInfo[]{});
-        Node node = new Node(config, addressBook);
+        Node node = new Node(config, addressBook, new InMemoryStorage());
 
         Thread serverThread = new Thread(node);
         serverThread.start();
@@ -46,7 +47,7 @@ public class RaftRpcTest {
         NodeConfig config = new NodeConfig();
         AddressBook addressBook = new AddressBook(new NodeInfo(813, 8213, "localhost"), new NodeInfo[]{});
 
-        Node node = new Node(config, addressBook);
+        Node node = new Node(config, addressBook, new InMemoryStorage());
         Thread serverThread = new Thread(node);
         serverThread.start();
 

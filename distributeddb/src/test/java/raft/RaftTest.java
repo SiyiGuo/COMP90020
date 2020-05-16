@@ -1,5 +1,6 @@
 package raft;
 
+import application.storage.InMemoryStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -42,9 +43,9 @@ public class RaftTest {
 
         // start nodes
         Node[] nodes = {
-                new Node(config, new AddressBook(node1, allNodes)),
-                new Node(config, new AddressBook(node2, allNodes)),
-                new Node(config, new AddressBook(node3, allNodes))
+                new Node(config, new AddressBook(node1, allNodes), new InMemoryStorage()),
+                new Node(config, new AddressBook(node2, allNodes), new InMemoryStorage()),
+                new Node(config, new AddressBook(node3, allNodes), new InMemoryStorage())
         };
         Thread[] nodeThreads = {new Thread(nodes[0]), new Thread(nodes[1]), new Thread(nodes[2])};
         for(int i = 0; i < nodes.length; i++) {

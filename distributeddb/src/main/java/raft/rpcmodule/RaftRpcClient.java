@@ -63,6 +63,7 @@ public class RaftRpcClient {
                     .setTerm(entry.term)
                     .setIndex(entry.index)
                     .setValue(entry.value)
+                    .setCommand(entry.command.name())
                     .build();
             builder.addEntries(logEntry);
         }

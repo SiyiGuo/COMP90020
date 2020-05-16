@@ -88,7 +88,7 @@ public class RaftConsensus implements Consensus {
             }
 
             /*
-             If an existing entry conflicet with a new one
+             If an existing entry conflict with a new one
              (Same index but different terms)
              delete the existing entries and all that follow it.
              */

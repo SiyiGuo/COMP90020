@@ -9,6 +9,7 @@ import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
+import raft.statemachinemodule.RaftCommand;
 
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
@@ -47,7 +48,8 @@ public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase
     public void appendEntries(AppendEntriesRequest request, StreamObserver<AppendEntriesResponse> responseObserver) {
         List<RaftLogEntry> entries = new ArrayList<RaftLogEntry>();
         for (LogEntry entry : request.getEntriesList()) {
-            entries.add(new RaftLogEntry(entry.getTerm(), entry.getIndex(), entry.getValue()));
+            entries.add(new RaftLogEntry(entry.getTerm(), entry.getIndex(),
+                    RaftCommand.valueOf(entry.getCommand()), entry.getValue()));
         }
         RaftAppendEntriesResult result = this.nodeHook.handleAppendEntries(new RaftAppendEntriesArgs(
                 request.getTerm(),
