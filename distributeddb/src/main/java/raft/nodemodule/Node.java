@@ -4,6 +4,7 @@ import application.storage.Storage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
+import raft.concurrentutil.RaftStaticThreadPool;
 import raft.concurrentutil.RaftThreadPool;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
@@ -115,7 +116,7 @@ public class Node implements LifeCycle, Runnable {
         }
 
         // create thread pool
-        this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
+        //this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
     }
 
     public void startNodeRunning() {
@@ -125,10 +126,17 @@ public class Node implements LifeCycle, Runnable {
          */
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.addressBook.getSelfInfo().listenPort, this);
-        this.threadPool.execute(rpcServer);
-        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
-        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
+        // private thread pool
+//        this.threadPool.execute(rpcServer);
+//        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+//        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+//        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
+
+        // static threadpool
+        RaftStaticThreadPool.execute(rpcServer);
+        RaftStaticThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+        RaftStaticThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+        RaftStaticThreadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // start 3 module
         this.logModule = new RaftLogModule();
