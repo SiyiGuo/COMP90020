@@ -16,7 +16,22 @@ public class RaftStateMachine implements StateMachine {
 
     @Override
     public void apply(RaftLogEntry raftLogEntry) {
-
+        String[] keyValue = raftLogEntry.value.split(":", 2);
+        String key = keyValue[0];
+        String value = keyValue[1];
+        switch (raftLogEntry.command) {
+            case GET:
+                break;
+            case PUT:
+                this.setString(key, value);
+                break;
+            case DELETE:
+                this.delString(key);
+                break;
+            case UPDATE:
+                this.setString(key, value);
+                break;
+        }
     }
 
     @Override

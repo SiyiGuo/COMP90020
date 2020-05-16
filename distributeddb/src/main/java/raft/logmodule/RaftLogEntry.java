@@ -12,7 +12,7 @@ public class RaftLogEntry {
         this.term = term;
         this.index = index;
         this.command = command;
-        this.value = value; // format: command:new_value
+        this.value = value; // format: key:value
     }
 
     @Override
