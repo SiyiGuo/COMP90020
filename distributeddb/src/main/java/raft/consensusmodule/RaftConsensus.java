@@ -6,7 +6,7 @@ import raft.Consensus;
 import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
 import raft.statemachinemodule.RaftState;
-import raft.ruleSet.RulesForServers;
+import raft.ruleset.RulesForServers;
 
 import java.util.ArrayList;
 

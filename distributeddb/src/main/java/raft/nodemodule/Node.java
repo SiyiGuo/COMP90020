@@ -17,7 +17,7 @@ import raft.periodictask.HeartBeatTask;
 import raft.periodictask.LeaderLogReplicationTask;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
-import raft.ruleSet.RulesForServers;
+import raft.ruleset.RulesForServers;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
 

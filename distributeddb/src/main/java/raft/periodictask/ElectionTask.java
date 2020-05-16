@@ -8,7 +8,7 @@ import raft.consensusmodule.RaftRequestVoteResult;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeConfig;
 import raft.rpcmodule.RaftRpcClient;
-import raft.ruleSet.RulesForServers;
+import raft.ruleset.RulesForServers;
 import raft.statemachinemodule.RaftState;
 
 import java.util.ArrayList;
