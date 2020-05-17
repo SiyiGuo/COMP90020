@@ -13,12 +13,16 @@ import raft.nodemodule.AddressBook;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeConfig;
 import raft.nodemodule.NodeInfo;
+import raft.nodemodule.RaftClientRequest;
+import raft.nodemodule.RaftClientResponse;
+import raft.rpcmodule.RaftRpcClient;
 import raft.statemachinemodule.RaftCommand;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Application {
@@ -71,6 +75,13 @@ public class Application {
     public static void ControllerMode() {
         System.out.println("controller");
         Scanner scanner = new Scanner(System.in);
+        ArrayList<RaftRpcClient> clients = new ArrayList<>();
+        for (NodeInfo nodeInfo: ALL_NODES.values()) {
+            clients.add(new RaftRpcClient(nodeInfo.hostname, nodeInfo.listenPort));
+        }
+        Random rand = new Random();
+
+        // Start operating
         String input;
         System.out.println(String.format("Please use command: %s, %s, %s, %s",
                 RaftCommand.GET.name(), RaftCommand.PUT.name(), RaftCommand.DELETE.name(), RaftCommand.UPDATE.name()));
@@ -82,6 +93,26 @@ public class Application {
                 break;
             }
             String[] values = input.split(",", 3);
+            if (values.length != 3) {
+                System.err.println("Invalid format");
+                System.out.println("Command format: COMMAND,KEY,VALUE\n");
+                continue;
+            }
+
+            // normal operation
+            try {
+                RaftRpcClient selectedClient = clients.get(rand.nextInt(clients.size()));
+                RaftClientResponse response = selectedClient.handleClientRequest(
+                        new RaftClientRequest(
+                                RaftCommand.valueOf(values[0]),
+                                values[1],
+                                values[2]
+                        )
+                );
+                System.out.println(response);
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
         }
     }
 

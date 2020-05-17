@@ -12,4 +12,9 @@ public class RaftClientResponse {
         this.key = key;
         this.result = result;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Command:%s key:%s result:%s", command.name(), key, result);
+    }
 }
