@@ -52,7 +52,7 @@ public class Node implements LifeCycle, Runnable {
 
     public int rpcCount;
     private RaftConsensus consensus;
-    private RaftLogModule logModule;
+    private volatile RaftLogModule logModule;
     private RaftStateMachine stateMachine;
     private Storage storage;
     //state of this node
@@ -125,7 +125,7 @@ public class Node implements LifeCycle, Runnable {
          */
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.addressBook.getSelfInfo().listenPort, this);
-        
+
         // private thread pool
 //        this.threadPool.execute(rpcServer);
 //        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);

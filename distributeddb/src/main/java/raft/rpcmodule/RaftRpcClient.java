@@ -9,6 +9,9 @@ import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
+import raft.nodemodule.RaftClientRequest;
+import raft.nodemodule.RaftClientResponse;
+import raft.statemachinemodule.RaftCommand;
 
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +36,20 @@ public class RaftRpcClient {
 
     public void shutdown() throws InterruptedException {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    }
+
+    public RaftClientResponse handleClientRequest(RaftClientRequest req) {
+        ClientRequest request = ClientRequest.newBuilder()
+                .setCommand(req.command.name())
+                .setKey(req.key)
+                .setValue(req.value)
+                .build();
+        ClientResponse response = blockingStub.handleClientRequest(request);
+        return new RaftClientResponse(
+                RaftCommand.valueOf(response.getCommand()),
+                response.getKey(),
+                response.getResult()
+        );
     }
 
     public RaftRequestVoteResult requestVote(RaftRequestVoteArgs args) {
