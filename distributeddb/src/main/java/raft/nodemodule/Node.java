@@ -180,13 +180,15 @@ public class Node implements LifeCycle, Runnable {
          */
         if (this.nodeId == this.addressBook.getLeaderId()) {
             // Append entry to local log
-            this.logModule.append(new RaftLogEntry(
+            RaftLogEntry clientEntry = new RaftLogEntry(
                     this.getCurrentTerm(),
                     this.logModule.getLastIndex(),
                     req.command,
                     req.key,
                     req.value
-            ));
+            );
+            this.logModule.append(clientEntry);
+            this.stateMachine.apply(clientEntry);
             // respond after entry applied to state machine
             // TODO: when?
             return new RaftClientResponse(req.command, req.key, "success");
