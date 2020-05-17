@@ -16,7 +16,6 @@ public class RaftLogModule implements LogModule {
     @Override
     public void append(RaftLogEntry raftLogEntry) {
         this.logs.add(raftLogEntry);
-        //TODO: write to file?
     }
 
     @Override
@@ -60,5 +59,9 @@ public class RaftLogModule implements LogModule {
             return (long)(this.logs.size()-1);
         }
         return (long) 0;
+    }
+
+    public ArrayList<RaftLogEntry> getAllLogs() {
+        return this.logs;
     }
 }

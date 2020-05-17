@@ -16,15 +16,8 @@ public class RaftStateMachine implements StateMachine {
 
     @Override
     public void apply(RaftLogEntry raftLogEntry) {
-        String[] keyValue = raftLogEntry.value.split(":", 2);
-        if (keyValue.length != 2) {
-            throw new RuntimeException(String.format(
-                    "%s has format problem in value. split: %s",
-                    raftLogEntry, keyValue
-            ));
-        }
-        String key = keyValue[0];
-        String value = keyValue[1];
+        String key = raftLogEntry.key;
+        String value = raftLogEntry.value;
         switch (raftLogEntry.command) {
             case GET:
                 break;
