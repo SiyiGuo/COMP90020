@@ -189,6 +189,7 @@ public class Node implements LifeCycle, Runnable {
             ));
             // respond after entry applied to state machine
             // TODO: when?
+            return new RaftClientResponse(req.command, req.key, "success");
         }
         return this.redirect(req);
     }
