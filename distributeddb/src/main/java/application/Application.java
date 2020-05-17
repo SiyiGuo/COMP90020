@@ -1,6 +1,7 @@
 package application;
 
 
+import application.storage.InMemoryStorage;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -8,8 +9,16 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import raft.nodemodule.AddressBook;
+import raft.nodemodule.Node;
+import raft.nodemodule.NodeConfig;
+import raft.nodemodule.NodeInfo;
 import raft.statemachinemodule.RaftCommand;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Scanner;
 
 public class Application {
@@ -18,7 +27,15 @@ public class Application {
     public static final String PEER = "peer";
     public static final String CONTROLLER = "controller";
 
+    public static final HashSet<Integer> PORTS = new HashSet<Integer>(Arrays.asList(8258, 8259, 8260));
+    public static final HashMap<Integer, NodeInfo> ALL_NODES = new HashMap<>();
+
     public static void main(String[] args) {
+        // address initiate
+        for (Integer port : PORTS) {
+            ALL_NODES.put(port, new NodeInfo(port, port, "localhost"));
+        }
+
         Options options = new Options();
         Option programMode = new Option("m", MODE, true, "Peer or Controller");
         Option listenPort = new Option("p", PORT, true, "Port peer will listen to");
@@ -71,5 +88,24 @@ public class Application {
     public static void NodeMode(int listenPort) {
         System.out.println("Node mode at port: "+listenPort);
         // TODO: check listen port is in our peer set;;
+        if (!(PORTS.contains(listenPort))) {
+            System.out.println("Please one of the following port: ");
+            PORTS.forEach((p) -> System.out.println(p));
+            System.exit(1);
+            return;
+        }
+
+        NodeConfig config = new NodeConfig();
+        Node node = new Node(config,
+                new AddressBook(
+                        ALL_NODES.get(listenPort),
+                        ALL_NODES.values().toArray(new NodeInfo[PORTS.size()])),
+                new InMemoryStorage()
+        );
+        node.run();
+        while(true) {
+            // so that we can monitor the package
+            continue;
+        }
     }
 }
