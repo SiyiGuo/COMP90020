@@ -123,6 +123,7 @@ public class ElectionTask implements Runnable {
         // include myself, this is the majority vote
         if (this.node.addressBook.isMajorityVote(receivedVote.intValue())) {
             this.node.setState(RaftState.LEADER);
+            this.node.addressBook.setLeaderId(this.node.nodeId);
             this.node.actionsWhenBecameLeader();
         }
 

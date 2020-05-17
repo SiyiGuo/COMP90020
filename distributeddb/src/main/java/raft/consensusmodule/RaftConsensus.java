@@ -78,6 +78,7 @@ public class RaftConsensus implements Consensus {
 
             // set last hearthbeat time
             this.node.setLastElectionTime(System.currentTimeMillis());
+            this.node.addressBook.setLeaderId(args.leaderId);
             this.node.setRandomTimeout();
 
             // Reply false if log doesn't contain any entry at prevLogIndex whose term matches prevLogTerm
@@ -119,26 +120,12 @@ public class RaftConsensus implements Consensus {
 
 
         if (this.node.getState() == RaftState.LEADER) {
-            /*
-            TODO:
-            If command received from client: append entry to local log,
-            respond after entry applied to state machine (§5.3)
-            • If last log index ≥ nextIndex for a follower: send
-            AppendEntries RPC with log entries starting at nextIndex
-            • If successful: update nextIndex and matchIndex for
-            follower (§5.3)
-            • If AppendEntries fails because of log inconsistency:
-            decrement nextIndex and retry (§5.3)
-            • If there exists an N such that N > commitIndex, a majority
-            of matchIndex[i] ≥ N, and log[N].term == currentTerm:
-            set commitIndex = N (§5.3, §5.4).
-             */
-
-            return new RaftAppendEntriesResult(this.node.getCurrentTerm(), true);
+            logger.error("Leader received appendEntries with term smaller. ");
+            return new RaftAppendEntriesResult(this.node.getCurrentTerm(), false);
         }
 
         // Should not be triggered
-        logger.warn("Node {} should not reach this when handling AppendEntries {}",
+        logger.error("Node {} should not reach this when handling AppendEntries {}",
                 this.node.nodeId, this.node.toString());
         return new RaftAppendEntriesResult(this.node.getCurrentTerm(), false);
     }
