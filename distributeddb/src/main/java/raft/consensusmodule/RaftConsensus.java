@@ -82,8 +82,10 @@ public class RaftConsensus implements Consensus {
             this.node.setRandomTimeout();
 
             // Reply false if log doesn't contain any entry at prevLogIndex whose term matches prevLogTerm
-            if (this.node.getLogModule().getLog(args.prevLogIndex) == null ||
-                    this.node.getLogModule().getLog(args.prevLogIndex).term != args.prevLogTerm
+            // TODO: check assumption. Whether we should return false when there is no log in follower.
+            if ( this.node.getLogModule().getLastIndex() != 0 &&
+                    (this.node.getLogModule().getLog(args.prevLogIndex) == null ||
+                    this.node.getLogModule().getLog(args.prevLogIndex).term != args.prevLogTerm)
             ) {
                 return new RaftAppendEntriesResult(this.node.getCurrentTerm(), false);
             }

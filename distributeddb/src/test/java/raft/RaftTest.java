@@ -82,6 +82,13 @@ public class RaftTest {
 
         SleepHelper.sleep(10000);
 
+        for(int i = 0; i < nodes.length; i++) {
+            nodeThreads[i].interrupt();
+            nodes[i].destroy();
+        }
+
+        SleepHelper.sleep(10000);
+        System.err.println("Start prining logs");
         for(Node node:nodes) {
             SleepHelper.sleep(2000);
             System.err.println("Logs for Node: " + node.nodeId);

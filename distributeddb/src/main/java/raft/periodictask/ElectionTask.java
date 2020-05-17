@@ -119,7 +119,6 @@ public class ElectionTask implements Runnable {
         }
 
         // Candidate: if votes received from majority of servers, become leader
-        System.out.println("election received vote " + receivedVote.intValue());
         // include myself, this is the majority vote
         if (this.node.addressBook.isMajorityVote(receivedVote.intValue())) {
             this.node.setState(RaftState.LEADER);
