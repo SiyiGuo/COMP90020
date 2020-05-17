@@ -20,6 +20,6 @@ public class RaftLogEntry {
     @Override
     public String toString() {
         return String.format("LogEntry.term:%s index:%s command: %s, key:%s, value:%s",
-                this.term, this.index, command, this.key, this.value);
+                this.term, this.index, this.command, this.key, this.value);
     }
 }

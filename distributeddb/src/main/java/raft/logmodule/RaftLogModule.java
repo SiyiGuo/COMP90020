@@ -36,7 +36,9 @@ public class RaftLogModule implements LogModule {
 
     // [startIndex, endIndex) inclusive, exclusive
     public List<RaftLogEntry> getLogsOnStartIndex(Long startIndex) {
-        return this.logs.subList(Math.toIntExact(startIndex), this.logs.size());
+        // as in algorithm, index is start from 1
+        // convert back to algorithm, we need to -1 to access right item
+        return this.logs.subList(Math.toIntExact(startIndex)-1, this.logs.size());
     }
 
     @Override
@@ -56,7 +58,7 @@ public class RaftLogModule implements LogModule {
     public Long getLastIndex() {
         // index from one
         if (this.logs.size() > 0) {
-            return (long)(this.logs.size()-1);
+            return (long)(this.logs.size());
         }
         return (long) 0;
     }

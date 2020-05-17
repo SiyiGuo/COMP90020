@@ -146,9 +146,7 @@ public class Node implements LifeCycle, Runnable {
 
     @Override
     public void destroy() {
-        if (this.rpcServer != null) {
-            this.rpcServer.stop();
-        }
+        this.rpcServer.stop();
     }
 
     @Override
