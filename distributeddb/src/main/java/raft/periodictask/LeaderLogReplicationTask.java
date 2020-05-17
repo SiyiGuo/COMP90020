@@ -69,6 +69,7 @@ public class LeaderLogReplicationTask implements Runnable {
             }, false);
         }
     }
+
     @Override
     public void run() {
         if (this.node.getState() != RaftState.LEADER) {

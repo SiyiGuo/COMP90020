@@ -196,9 +196,7 @@ public class Node implements LifeCycle, Runnable {
     // redirect to leader
     public RaftClientResponse redirect(RaftClientRequest req) {
         int leaderId = addressBook.getLeaderId();
-        // TODO: somehow call the leader
-        // reutrn this.leader.handleCLientRequest(req)
-        return null;
+        return this.peers.get(leaderId).handleClientRequest(req);
     }
 
     public void actionsWhenBecameLeader() {
