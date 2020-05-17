@@ -8,6 +8,9 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import raft.statemachinemodule.RaftCommand;
+
+import java.util.Scanner;
 
 public class Application {
     public static final String MODE = "mode";
@@ -47,12 +50,26 @@ public class Application {
             ControllerMode();
         }
     }
+
     public static void ControllerMode() {
         System.out.println("controller");
+        Scanner scanner = new Scanner(System.in);
+        String input;
+        System.out.println(String.format("Please use command: %s, %s, %s, %s",
+                RaftCommand.GET.name(), RaftCommand.PUT.name(), RaftCommand.DELETE.name(), RaftCommand.UPDATE.name()));
+        System.out.println("Command format: COMMAND,KEY,VALUE\n");
+        while (true) {
+            input = scanner.nextLine();
+            System.out.println(input);
+            if (input.equalsIgnoreCase("stop")) {
+                break;
+            }
+            String[] values = input.split(",", 3);
+        }
     }
 
     public static void NodeMode(int listenPort) {
         System.out.println("Node mode at port: "+listenPort);
-        // TODO: check listen port is in our peer set;
+        // TODO: check listen port is in our peer set;;
     }
 }
