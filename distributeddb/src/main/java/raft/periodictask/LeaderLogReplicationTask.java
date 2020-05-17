@@ -28,7 +28,7 @@ public class LeaderLogReplicationTask implements Runnable {
         long lastIndex = this.node.getLogModule().getLastIndex();
         long nodeNextIndex = this.node.getNodeNextIndex(nodeInfo.nodeId);
         if (lastIndex >= nodeNextIndex) {
-            logger.debug("Node{} lastIndex{} nodeNextIndex{}", nodeInfo.nodeId, lastIndex, nodeNextIndex);
+            logger.debug("Current Node{} Node{} lastIndex{} nodeNextIndex{}", this.node.nodeId, nodeInfo.nodeId, lastIndex, nodeNextIndex);
             // prepare the entry
             RaftStaticThreadPool.execute(() -> {
                 if (!(this.node.getState() == RaftState.LEADER)) {
