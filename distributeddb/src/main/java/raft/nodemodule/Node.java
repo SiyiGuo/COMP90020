@@ -19,6 +19,7 @@ import raft.periodictask.LeaderLogReplicationTask;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
 import raft.ruleset.RulesForServers;
+import raft.statemachinemodule.RaftCommand;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
 
@@ -189,7 +190,11 @@ public class Node implements LifeCycle, Runnable {
             this.stateMachine.apply(clientEntry);
             // respond after entry applied to state machine
             // TODO: when?
-            return new RaftClientResponse(req.command, req.key, "success");
+            if (req.command == RaftCommand.GET) {
+                return new RaftClientResponse(req.command, req.key, req.value);
+            } else {
+                return new RaftClientResponse(req.command, req.key, "success");
+            }
         }
         return this.redirect(req);
     }

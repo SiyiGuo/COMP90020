@@ -9,6 +9,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import raft.concurrentutil.SleepHelper;
 import raft.nodemodule.AddressBook;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeConfig;
@@ -136,7 +137,7 @@ public class Application {
         node.run();
         while(true) {
             // so that we can monitor the package
-            continue;
+            SleepHelper.sleep(1000000);
         }
     }
 }

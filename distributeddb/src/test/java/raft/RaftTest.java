@@ -97,6 +97,7 @@ public class RaftTest {
             }
         }
     }
+
     @Test
     public void testInitialElection() throws InterruptedException {
         NodeConfig config = new NodeConfig();
