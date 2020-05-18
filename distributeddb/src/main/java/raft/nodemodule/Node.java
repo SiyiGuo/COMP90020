@@ -168,8 +168,6 @@ public class Node implements LifeCycle, Runnable {
         /*
         TODO:
         If command received from client.
-
-
          */
         if (this.nodeId == this.addressBook.getLeaderId()) {
             switch (req.command) {
@@ -189,9 +187,11 @@ public class Node implements LifeCycle, Runnable {
                             req.value
                     );
                     this.logModule.append(clientEntry);
-                    this.stateMachine.apply(clientEntry);
-                    // respond after entry applied to state machine
-                    // TODO: when?
+                    /*
+                    TODO:
+                    respond after entry applied to state machine
+                    Have a queue here? so that when index applied we return to client
+                     */
                     return new RaftClientResponse(req.command, req.key, "success");
             }
         }
@@ -324,6 +324,15 @@ public class Node implements LifeCycle, Runnable {
 
     public void setCommitIndex(long commitIndex) {
         this.commitIndex = commitIndex;
+        // Rules for Servers: All Servers
+        // If commitIndex > lastApplied.
+        // Increment lastApplied/ Apply log[lastApplied] to state machine.
+        if (this.commitIndex > this.lastApplied) {
+            for(long i = this.lastApplied; i <= this.commitIndex; i++) {
+                this.stateMachine.apply(this.logModule.getLog(i));
+            }
+            this.lastApplied = this.commitIndex;
+        }
     }
 
     public RaftLogModule getLogModule() {
