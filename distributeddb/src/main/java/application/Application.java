@@ -2,6 +2,8 @@ package application;
 
 
 import application.storage.InMemoryStorage;
+import io.grpc.netty.shaded.io.netty.util.internal.logging.InternalLoggerFactory;
+import io.grpc.netty.shaded.io.netty.util.internal.logging.Log4JLoggerFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -23,8 +25,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Application {
     public static final String MODE = "mode";
@@ -36,6 +41,12 @@ public class Application {
     public static final HashMap<Integer, NodeInfo> ALL_NODES = new HashMap<>();
 
     public static void main(String[] args) {
+        System.setProperty("io.grpc.netty.level", "INFO");
+        System.setProperty("handlers", "java.util.logging.ConsoleHandler");
+        System.setProperty("java.util.logging.ConsoleHandler.level", "INFO");
+        Properties pros = System.getProperties();
+        pros.list(System.out);
+
         // address initiate
         for (Integer port : PORTS) {
             ALL_NODES.put(port, new NodeInfo(port, port, "localhost"));

@@ -178,22 +178,27 @@ public class Node implements LifeCycle, Runnable {
 
          */
         if (this.nodeId == this.addressBook.getLeaderId()) {
-            // Append entry to local log
-            RaftLogEntry clientEntry = new RaftLogEntry(
-                    this.getCurrentTerm(),
-                    this.logModule.getLastIndex(),
-                    req.command,
-                    req.key,
-                    req.value
-            );
-            this.logModule.append(clientEntry);
-            this.stateMachine.apply(clientEntry);
-            // respond after entry applied to state machine
-            // TODO: when?
-            if (req.command == RaftCommand.GET) {
-                return new RaftClientResponse(req.command, req.key, req.value);
-            } else {
-                return new RaftClientResponse(req.command, req.key, "success");
+            switch (req.command) {
+                case FINDLEADER:
+                    return new RaftClientResponse(req.command, req.key,
+                            Integer.toString(this.addressBook.getLeaderId()));
+                case GET:
+                    return new RaftClientResponse(req.command, req.key,
+                            this.stateMachine.getString(req.key));
+                default:
+                    // Append entry to local log
+                    RaftLogEntry clientEntry = new RaftLogEntry(
+                            this.getCurrentTerm(),
+                            this.logModule.getLastIndex(),
+                            req.command,
+                            req.key,
+                            req.value
+                    );
+                    this.logModule.append(clientEntry);
+                    this.stateMachine.apply(clientEntry);
+                    // respond after entry applied to state machine
+                    // TODO: when?
+                    return new RaftClientResponse(req.command, req.key, "success");
             }
         }
         return this.redirect(req);

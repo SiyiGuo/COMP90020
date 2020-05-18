@@ -4,5 +4,6 @@ public enum RaftCommand {
     GET,
     PUT,
     DELETE,
-    UPDATE
+    UPDATE,
+    FINDLEADER,
 }

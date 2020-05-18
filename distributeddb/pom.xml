@@ -18,6 +18,7 @@
         <java.version>8</java.version>
         <maven.compiler.source>1.6</maven.compiler.source>
         <maven.compiler.target>1.6</maven.compiler.target>
+        <maven.test.skip>true</maven.test.skip>
     </properties>
 
     <dependencies>

@@ -44,7 +44,12 @@ public class RaftStateMachine implements StateMachine {
 
     @Override
     public String getString(String key) {
-        return this.stroage.get(key);
+        try {
+            return this.stroage.get(key);
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            return "Key not present";
+        }
     }
 
     @Override
