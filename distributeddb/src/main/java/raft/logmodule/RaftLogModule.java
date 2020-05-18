@@ -11,7 +11,7 @@ import java.util.List;
 
 public class RaftLogModule implements LogModule {
     private ArrayList<RaftLogEntry> logs;
-    private LogStorage storage = new JsonLogStorage();
+    private LogStorage storage;
 
     public RaftLogModule(LogStorage storage) {
         this.storage = storage;
