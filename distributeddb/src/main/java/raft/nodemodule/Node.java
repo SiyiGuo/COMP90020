@@ -1,10 +1,12 @@
 package raft.nodemodule;
 
+import application.storage.DummyLogStorage;
+import application.storage.LogStorage;
 import application.storage.Storage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
-import raft.concurrentutil.RaftThreadPool;
+import raft.concurrentutil.RaftStaticThreadPool;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.consensusmodule.RaftConsensus;
@@ -35,25 +37,29 @@ public class Node implements LifeCycle, Runnable {
     public final static int NULL_VOTE = -1;
     public final int nodeId;
     public final Node nodehook;
+    public int rpcCount;
+    private Storage storage;
+    private LogStorage logStorage;
 
     /* Engineering Variables*/
     // config for this node
     public final NodeConfig config;
 
-    /* Peers
-    Peer may be down but never deleted
-    TODO: When add new PEER
-    add both RPC client, and adressBook
+    /*
+    Peers
+    RPC related
      */
+    private RaftRpcServer rpcServer;
     public final AddressBook addressBook;
     public HashMap<Integer, RaftRpcClient> peers;
 
-
-    public int rpcCount;
+    /*
+    ALgorithm related
+     */
     private RaftConsensus consensus;
-    private RaftLogModule logModule;
+    private volatile RaftLogModule logModule;
     private RaftStateMachine stateMachine;
-    private Storage storage;
+
     //state of this node
     private volatile RaftState state;
     //Persistent state on all servers
@@ -76,71 +82,66 @@ public class Node implements LifeCycle, Runnable {
     private HeartBeatTask heartBeatTask;
     private ElectionTask electionTask;
     private LeaderLogReplicationTask replicationTask;
-    public RaftThreadPool threadPool;
-    /* RPC related*/
-    private RaftRpcServer rpcServer;
-    // Other
-    private volatile boolean started;
 
-    public Node(NodeConfig config, AddressBook addressBook, Storage storage) {
+    public Node(NodeConfig config, AddressBook addressBook, Storage storage, LogStorage logStorage) {
+        this.config = config;
+        this.rpcCount = 0;
+
         this.addressBook = addressBook;
         this.storage = storage;
+        this.logStorage = logStorage;
         this.nodeId = this.addressBook.getSelfInfo().nodeId;
         this.nodehook = this;
 
         this.commitIndex = 0;
         this.lastApplied = 0;
         this.state = RaftState.FOLLOWER;
-        this.config = config;
-        this.rpcCount = 0;
 
         this.heartBeatTask = new HeartBeatTask(this);
         this.electionTask = new ElectionTask(this);
         this.replicationTask = new LeaderLogReplicationTask(this);
-        // TODO: replicationTask
-        // this.replicationTask = new ReplicationTask()
+    }
+
+    public Node(NodeConfig config, AddressBook addressBook, Storage storage) {
+        this(config, addressBook, storage, new DummyLogStorage());
     }
 
     @Override
     public void init() {
-        if (started) return;
-
         /*
         Run the initilization of the server
          */
+
         // create create Peer Client
         this.peers = new HashMap<>();
         for (NodeInfo peer : this.addressBook.getPeerInfo()) {
             this.peers.put(peer.nodeId, new RaftRpcClient(peer.hostname, peer.listenPort));
         }
-
-        // create thread pool
-        this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
     }
 
     public void startNodeRunning() {
         /*
         Actual initial sequence
-        Actual initial sequence
          */
+
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.addressBook.getSelfInfo().listenPort, this);
-        this.threadPool.execute(rpcServer);
-        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
-        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
+
+        // schedule periodic task
+        RaftStaticThreadPool.execute(rpcServer);
+        RaftStaticThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
+        RaftStaticThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
+        RaftStaticThreadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // start 3 module
-        this.logModule = new RaftLogModule();
+        this.logModule = new RaftLogModule(this.logStorage);
         this.consensus = new RaftConsensus(this);
         this.stateMachine = new RaftStateMachine(this.storage);
     }
 
     @Override
     public void destroy() {
-        if (this.rpcServer != null) {
-            this.rpcServer.stop();
-        }
+        this.rpcServer.stop();
     }
 
     @Override
@@ -163,24 +164,44 @@ public class Node implements LifeCycle, Runnable {
         return this.consensus.handleAppendEntries(args);
     }
 
-    public ClientResponse handleClientRequest(ClientRequest req) {
+    public RaftClientResponse handleClientRequest(RaftClientRequest req) {
         /*
         TODO:
         If command received from client.
 
-        Append entry to local log
 
-        respond after entry applied to state machine
          */
-        return null;
+        if (this.nodeId == this.addressBook.getLeaderId()) {
+            switch (req.command) {
+                case FINDLEADER:
+                    return new RaftClientResponse(req.command, req.key,
+                            Integer.toString(this.addressBook.getLeaderId()));
+                case GET:
+                    return new RaftClientResponse(req.command, req.key,
+                            this.stateMachine.getString(req.key));
+                default:
+                    // Append entry to local log
+                    RaftLogEntry clientEntry = new RaftLogEntry(
+                            this.getCurrentTerm(),
+                            this.logModule.getLastIndex(),
+                            req.command,
+                            req.key,
+                            req.value
+                    );
+                    this.logModule.append(clientEntry);
+                    this.stateMachine.apply(clientEntry);
+                    // respond after entry applied to state machine
+                    // TODO: when?
+                    return new RaftClientResponse(req.command, req.key, "success");
+            }
+        }
+        return this.redirect(req);
     }
 
     // redirect to leader
-    public ClientResponse redirect(ClientRequest req) {
+    public RaftClientResponse redirect(RaftClientRequest req) {
         int leaderId = addressBook.getLeaderId();
-        // TODO: somehow call the leader
-        // reutrn this.leader.handleCLientRequest(req)
-        return null;
+        return this.peers.get(leaderId).handleClientRequest(req);
     }
 
     public void actionsWhenBecameLeader() {
@@ -219,7 +240,7 @@ public class Node implements LifeCycle, Runnable {
         Start Append empty entries
          */
         for (RaftRpcClient peer : peers.values()) {
-            threadPool.execute(() -> {
+            RaftStaticThreadPool.execute(() -> {
                 try {
                     if(this.state != RaftState.LEADER) {
                         return;
@@ -234,7 +255,7 @@ public class Node implements LifeCycle, Runnable {
                             commitIndex
                     );
                     RaftAppendEntriesResult result = peer.appendEntries(request);
-                    RulesForServers.compareTermAndBecomeFollower(request.term, nodehook);
+                    RulesForServers.compareTermAndBecomeFollower(result.term, nodehook);
                 } catch (Exception e) {
                     logger.error("HeadBeat Task RPF fail.");
                 }

@@ -1,5 +1,8 @@
 package raft.logmodule;
 
+import application.storage.LogStorage;
+import application.storage.JsonLogStorage;
+import application.storage.Storage;
 import raft.LogModule;
 import raft.statemachinemodule.RaftCommand;
 
@@ -8,15 +11,17 @@ import java.util.List;
 
 public class RaftLogModule implements LogModule {
     private ArrayList<RaftLogEntry> logs;
+    private LogStorage storage;
 
-    public RaftLogModule() {
+    public RaftLogModule(LogStorage storage) {
+        this.storage = storage;
         this.logs = new ArrayList<>();
     }
 
     @Override
     public void append(RaftLogEntry raftLogEntry) {
         this.logs.add(raftLogEntry);
-        //TODO: write to file?
+        this.storage.add(System.currentTimeMillis(), raftLogEntry);
     }
 
     @Override
@@ -33,11 +38,14 @@ public class RaftLogModule implements LogModule {
         // if an existing entry conflicts with a new one (same index but different terms)
         // delete the existing entry and all that follow it
         this.logs.subList(Math.toIntExact(startIndex), this.logs.size()).clear();
+        this.storage.removeOnStartIndex(System.currentTimeMillis(), startIndex);
     }
 
     // [startIndex, endIndex) inclusive, exclusive
     public List<RaftLogEntry> getLogsOnStartIndex(Long startIndex) {
-        return this.logs.subList(Math.toIntExact(startIndex), this.logs.size());
+        // as in algorithm, index is start from 1
+        // convert back to program implementation, we need to -1 to access right item
+        return this.logs.subList(Math.toIntExact(startIndex)-1, this.logs.size());
     }
 
     @Override
@@ -48,17 +56,21 @@ public class RaftLogModule implements LogModule {
         /*
         TODO
         check assumption here
-        we aussme is there is no log, return term0, index0 and no value
+        we assume is there is no log, return term0, index0 and no value
          */
-        return new RaftLogEntry(0, 0, RaftCommand.GET, "");
+        return new RaftLogEntry(0, 0, RaftCommand.GET, "", "");
     }
 
     @Override
     public Long getLastIndex() {
         // index from one
         if (this.logs.size() > 0) {
-            return (long)(this.logs.size()-1);
+            return (long)(this.logs.size());
         }
         return (long) 0;
+    }
+
+    public ArrayList<RaftLogEntry> getAllLogs() {
+        return this.logs;
     }
 }

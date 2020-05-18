@@ -3,6 +3,7 @@ package raft.periodictask;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import raft.concurrentutil.RaftStaticThreadPool;
 import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.nodemodule.Node;
@@ -55,7 +56,7 @@ public class ElectionTask implements Runnable {
         //RequestVoteRPC in parallel to other peers
         ArrayList<Future> results = new ArrayList<>();
         for (RaftRpcClient peer : this.node.getAllPeerRpfClient()) {
-            results.add(this.node.threadPool.submit(() -> {
+            results.add(RaftStaticThreadPool.submit(() -> {
                 try {
                     RaftRequestVoteArgs request = new RaftRequestVoteArgs(
                             this.node.getCurrentTerm(),
@@ -75,7 +76,7 @@ public class ElectionTask implements Runnable {
         AtomicInteger receivedVote = new AtomicInteger(0);
         CountDownLatch countDown = new CountDownLatch(results.size());
         for (Future peerResult : results) {
-            this.node.threadPool.submit(() -> {
+            RaftStaticThreadPool.submit(() -> {
                 try {
                     if (this.node.getState() == RaftState.FOLLOWER) return -1;
                     RaftRequestVoteResult result = (RaftRequestVoteResult) peerResult.get(NodeConfig.RPC_RESULT_WAIT_TIME, MILLISECONDS);
@@ -118,10 +119,10 @@ public class ElectionTask implements Runnable {
         }
 
         // Candidate: if votes received from majority of servers, become leader
-        System.out.println("election received vote " + receivedVote.intValue());
         // include myself, this is the majority vote
         if (this.node.addressBook.isMajorityVote(receivedVote.intValue())) {
             this.node.setState(RaftState.LEADER);
+            this.node.addressBook.setLeaderId(this.node.nodeId);
             this.node.actionsWhenBecameLeader();
         }
 

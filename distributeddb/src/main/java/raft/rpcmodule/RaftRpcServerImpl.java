@@ -9,6 +9,8 @@ import raft.consensusmodule.RaftRequestVoteArgs;
 import raft.consensusmodule.RaftRequestVoteResult;
 import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
+import raft.nodemodule.RaftClientRequest;
+import raft.nodemodule.RaftClientResponse;
 import raft.statemachinemodule.RaftCommand;
 
 import javax.validation.constraints.NotNull;
@@ -23,6 +25,22 @@ public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase
     public RaftRpcServerImpl(@NotNull Node nodehook) {
         super();
         this.nodeHook = nodehook;
+    }
+
+    @Override
+    public void handleClientRequest(ClientRequest request, StreamObserver<ClientResponse> responseObserver) {
+        RaftClientResponse result = this.nodeHook.handleClientRequest(new RaftClientRequest(
+                RaftCommand.valueOf(request.getCommand()),
+                request.getKey(),
+                request.getValue()
+        ));
+        ClientResponse response = ClientResponse.newBuilder()
+                .setCommand(result.command.name())
+                .setKey(result.key)
+                .setResult(result.result)
+                .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     @Override
@@ -48,8 +66,10 @@ public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase
     public void appendEntries(AppendEntriesRequest request, StreamObserver<AppendEntriesResponse> responseObserver) {
         List<RaftLogEntry> entries = new ArrayList<RaftLogEntry>();
         for (LogEntry entry : request.getEntriesList()) {
-            entries.add(new RaftLogEntry(entry.getTerm(), entry.getIndex(),
-                    RaftCommand.valueOf(entry.getCommand()), entry.getValue()));
+            entries.add(new RaftLogEntry(
+                    entry.getTerm(), entry.getIndex(),
+                    RaftCommand.valueOf(entry.getCommand()),
+                    entry.getKey(), entry.getValue()));
         }
         RaftAppendEntriesResult result = this.nodeHook.handleAppendEntries(new RaftAppendEntriesArgs(
                 request.getTerm(),

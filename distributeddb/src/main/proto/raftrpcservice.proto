@@ -10,6 +10,19 @@ package raft;
 service RaftRpcService {
   rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse);
   rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse);
+  rpc HandleClientRequest (ClientRequest) returns (ClientResponse);
+}
+
+message ClientRequest {
+    string command = 1;
+    string key = 2;
+    string value = 3;
+}
+
+message ClientResponse {
+    string command = 1;
+    string key = 2;
+    string result = 3;
 }
 
 message LogEntry {
@@ -17,6 +30,7 @@ message LogEntry {
     int64 index = 2;
     string value = 3;
     string command = 4;
+    string key = 5;
 }
 
 //RequestVote RPC

@@ -2,6 +2,7 @@ package raft.periodictask;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import raft.concurrentutil.RaftStaticThreadPool;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.nodemodule.Node;
@@ -27,9 +28,9 @@ public class LeaderLogReplicationTask implements Runnable {
         long lastIndex = this.node.getLogModule().getLastIndex();
         long nodeNextIndex = this.node.getNodeNextIndex(nodeInfo.nodeId);
         if (lastIndex >= nodeNextIndex) {
-            logger.debug("Node{} lastIndex{} nodeNextIndex{}", nodeInfo.nodeId, lastIndex, nodeNextIndex);
+            logger.debug("Current Node{} Node{} lastIndex{} nodeNextIndex{}", this.node.nodeId, nodeInfo.nodeId, lastIndex, nodeNextIndex);
             // prepare the entry
-            this.node.threadPool.execute(() -> {
+            RaftStaticThreadPool.execute(() -> {
                 if (!(this.node.getState() == RaftState.LEADER)) {
                     return;
                 }
@@ -68,6 +69,7 @@ public class LeaderLogReplicationTask implements Runnable {
             }, false);
         }
     }
+
     @Override
     public void run() {
         if (this.node.getState() != RaftState.LEADER) {

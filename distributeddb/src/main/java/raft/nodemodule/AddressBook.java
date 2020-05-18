@@ -10,7 +10,8 @@ public class AddressBook {
 
     /*
     TODO: have a leader ID.
-    Setup when ever leader info is updated
+    Setup whenever leader info is updated
+    TODO: when do we update leaderId?
      */
     private volatile int leaderId;
 
