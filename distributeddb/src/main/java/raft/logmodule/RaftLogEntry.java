@@ -1,5 +1,5 @@
 package raft.logmodule;
-
+import org.json.simple.JSONObject;
 import raft.statemachinemodule.RaftCommand;
 
 public class RaftLogEntry {
@@ -21,5 +21,14 @@ public class RaftLogEntry {
     public String toString() {
         return String.format("LogEntry.term:%s index:%s command: %s, key:%s, value:%s",
                 this.term, this.index, this.command, this.key, this.value);
+    }
+
+    public JSONObject toJson() {
+        JSONObject obj = new JSONObject();
+        obj.put("term", term);
+        obj.put("value", value);
+        obj.put("command", command);
+        obj.put("index", index);
+        return obj;
     }
 }

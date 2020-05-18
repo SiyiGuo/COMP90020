@@ -1,6 +1,7 @@
 package raft.logmodule;
 
 import application.storage.LogStorage;
+import application.storage.JsonLogStorage;
 import application.storage.Storage;
 import raft.LogModule;
 import raft.statemachinemodule.RaftCommand;
@@ -10,7 +11,7 @@ import java.util.List;
 
 public class RaftLogModule implements LogModule {
     private ArrayList<RaftLogEntry> logs;
-    private LogStorage storage;
+    private LogStorage storage = new JsonLogStorage();
 
     public RaftLogModule(LogStorage storage) {
         this.storage = storage;
