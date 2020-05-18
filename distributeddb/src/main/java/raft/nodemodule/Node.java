@@ -281,6 +281,10 @@ public class Node implements LifeCycle, Runnable {
         return this.nextIndex.get(nodeId);
     }
 
+    public long getNodeMatchIndex(int nodeId) {
+        return this.matchIndex.get(nodeId);
+    }
+
     public void updateNodeNextIndex(int nodeId, long newNextIndex) {
         this.nextIndex.put(nodeId, newNextIndex);
     }
@@ -327,6 +331,9 @@ public class Node implements LifeCycle, Runnable {
         // Rules for Servers: All Servers
         // If commitIndex > lastApplied.
         // Increment lastApplied/ Apply log[lastApplied] to state machine.
+        System.err.println("-----------committing---------------");
+        System.err.println(commitIndex);
+        System.err.println(this.lastApplied);
         if (this.commitIndex > this.lastApplied) {
             for(long i = this.lastApplied; i <= this.commitIndex; i++) {
                 this.stateMachine.apply(this.logModule.getLog(i));

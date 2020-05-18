@@ -27,8 +27,11 @@ public class LeaderLogReplicationTask implements Runnable {
          */
         long lastIndex = this.node.getLogModule().getLastIndex();
         long nodeNextIndex = this.node.getNodeNextIndex(nodeInfo.nodeId);
+        logger.debug("Current Node{} Node{} lastIndex{} nodeNextIndex{} nodeMatchIndex{}",
+                this.node.nodeId, nodeInfo.nodeId, lastIndex, nodeNextIndex,
+                this.node.getNodeMatchIndex(nodeInfo.nodeId)
+        );
         if (lastIndex >= nodeNextIndex) {
-            logger.debug("Current Node{} Node{} lastIndex{} nodeNextIndex{}", this.node.nodeId, nodeInfo.nodeId, lastIndex, nodeNextIndex);
             // prepare the entry
             RaftStaticThreadPool.execute(() -> {
                 if (!(this.node.getState() == RaftState.LEADER)) {
@@ -89,16 +92,21 @@ public class LeaderLogReplicationTask implements Runnable {
         ArrayList<Long> allIndexCandidates = new ArrayList<>();
         for (long matchIndex: this.node.getAllMatchIntex()) {
             // If there exists an N such that N > commitIndex
+            System.out.println(String.format("m:%s c:%s", matchIndex, this.node.getCommitIndex()));
             if (matchIndex > this.node.getCommitIndex()) {
                 allIndexCandidates.add(matchIndex);
             }
         }
         allIndexCandidates.sort(Long::compareTo); // sort all N > commit index from small to big
+        allIndexCandidates.forEach(num->System.out.println("***: " + num));
 
         int i = 0;
         for(long N: allIndexCandidates) {
             i += 1;
             // a majority of matchIndex[i] ≥ N。 Since Arraylist is sorted, all matchIndex[i:] >= N;
+            System.out.println(String.format("getLogModule:%s currentTerm:%s",
+                    this.node.getLogModule().getLog(N),
+                    this.node.getCurrentTerm()));
             if (this.node.addressBook.isMajorityVote(allIndexCandidates.size() - i)) {
                 // and log[N].term == currentTerm:
                 if (this.node.getLogModule().getLog(N).term == this.node.getCurrentTerm()) {

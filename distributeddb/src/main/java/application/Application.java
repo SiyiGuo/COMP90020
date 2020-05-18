@@ -41,10 +41,6 @@ public class Application {
     public static final HashMap<Integer, NodeInfo> ALL_NODES = new HashMap<>();
 
     public static void main(String[] args) {
-        Logger.getLogger("").setLevel(Level.FINE);
-        Logger.getLogger("").getHandlers()[0].setLevel(Level.FINE);
-        Logger.getLogger("io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler").setLevel(Level.FINE);
-
         // address initiate
         for (Integer port : PORTS) {
             ALL_NODES.put(port, new NodeInfo(port, port, "localhost"));

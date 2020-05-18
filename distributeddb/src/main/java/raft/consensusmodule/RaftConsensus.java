@@ -111,8 +111,6 @@ public class RaftConsensus implements Consensus {
             //Append new entries not already in the log
             newEntries.forEach((newEntry) -> {
                 this.node.getLogModule().append(newEntry);
-                // TODO: check whether I should apply statemachine here
-                this.node.getStateMachine().apply(newEntry);
             });
 
             // if leaderCommit > commitINdex, set commitIndex = min(leaderCommit, index of alst new entry)
