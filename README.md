@@ -1,5 +1,10 @@
 # COMP90020
 
+0. package generate the pakcage
+```
+mvn install
+```
+
 1. build image
 ```
 docker build -t raft .
