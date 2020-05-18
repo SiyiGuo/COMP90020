@@ -29,12 +29,13 @@ public class JsonLogStorage implements LogStorage {
     }
 
     private void writeJsonToFile() {
-        JSONArray jsLogs = new JSONArray(this.logs);
-        try {
-            StringWriter out = new StringWriter();
-            jsLogs.writeJSONString(out);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //TODO: fix this syntax problem
+//        JSONArray jsLogs = new JSONArray(this.logs);
+//        try {
+//            StringWriter out = new StringWriter();
+//            jsLogs.writeJSONString(out);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 }
