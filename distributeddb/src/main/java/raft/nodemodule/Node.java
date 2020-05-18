@@ -1,11 +1,12 @@
 package raft.nodemodule;
 
+import application.storage.DummyLogStorage;
+import application.storage.LogStorage;
 import application.storage.Storage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
 import raft.concurrentutil.RaftStaticThreadPool;
-import raft.concurrentutil.RaftThreadPool;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.consensusmodule.RaftConsensus;
@@ -19,7 +20,6 @@ import raft.periodictask.LeaderLogReplicationTask;
 import raft.rpcmodule.RaftRpcClient;
 import raft.rpcmodule.RaftRpcServer;
 import raft.ruleset.RulesForServers;
-import raft.statemachinemodule.RaftCommand;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
 
@@ -37,25 +37,29 @@ public class Node implements LifeCycle, Runnable {
     public final static int NULL_VOTE = -1;
     public final int nodeId;
     public final Node nodehook;
+    public int rpcCount;
+    private Storage storage;
+    private LogStorage logStorage;
 
     /* Engineering Variables*/
     // config for this node
     public final NodeConfig config;
 
-    /* Peers
-    Peer may be down but never deleted
-    TODO: When add new PEER
-    add both RPC client, and adressBook
+    /*
+    Peers
+    RPC related
      */
+    private RaftRpcServer rpcServer;
     public final AddressBook addressBook;
     public HashMap<Integer, RaftRpcClient> peers;
 
-
-    public int rpcCount;
+    /*
+    ALgorithm related
+     */
     private RaftConsensus consensus;
     private volatile RaftLogModule logModule;
     private RaftStateMachine stateMachine;
-    private Storage storage;
+
     //state of this node
     private volatile RaftState state;
     //Persistent state on all servers
@@ -78,69 +82,59 @@ public class Node implements LifeCycle, Runnable {
     private HeartBeatTask heartBeatTask;
     private ElectionTask electionTask;
     private LeaderLogReplicationTask replicationTask;
-//    public RaftThreadPool threadPool;
-    /* RPC related*/
-    private RaftRpcServer rpcServer;
-    // Other
-    private volatile boolean started;
 
-    public Node(NodeConfig config, AddressBook addressBook, Storage storage) {
+    public Node(NodeConfig config, AddressBook addressBook, Storage storage, LogStorage logStorage) {
+        this.config = config;
+        this.rpcCount = 0;
+
         this.addressBook = addressBook;
         this.storage = storage;
+        this.logStorage = logStorage;
         this.nodeId = this.addressBook.getSelfInfo().nodeId;
         this.nodehook = this;
 
         this.commitIndex = 0;
         this.lastApplied = 0;
         this.state = RaftState.FOLLOWER;
-        this.config = config;
-        this.rpcCount = 0;
 
         this.heartBeatTask = new HeartBeatTask(this);
         this.electionTask = new ElectionTask(this);
         this.replicationTask = new LeaderLogReplicationTask(this);
-        // TODO: replicationTask
-        // this.replicationTask = new ReplicationTask()
+    }
+
+    public Node(NodeConfig config, AddressBook addressBook, Storage storage) {
+        this(config, addressBook, storage, new DummyLogStorage());
     }
 
     @Override
     public void init() {
-        if (started) return;
-
         /*
         Run the initilization of the server
          */
+
         // create create Peer Client
         this.peers = new HashMap<>();
         for (NodeInfo peer : this.addressBook.getPeerInfo()) {
             this.peers.put(peer.nodeId, new RaftRpcClient(peer.hostname, peer.listenPort));
         }
-
-        // create thread pool
-//        this.threadPool = new RaftThreadPool(Integer.toString(this.nodeId));
     }
 
     public void startNodeRunning() {
         /*
         Actual initial sequence
          */
+
         // run rpc server
         this.rpcServer = new RaftRpcServer(this.addressBook.getSelfInfo().listenPort, this);
 
-        // private thread pool
-//        this.threadPool.execute(rpcServer);
-//        this.threadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
-//        this.threadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
-//        this.threadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
-
-        // static threadpool
+        // schedule periodic task
         RaftStaticThreadPool.execute(rpcServer);
         RaftStaticThreadPool.scheduleWithFixedDelay(heartBeatTask, NodeConfig.TASK_DELAY);
         RaftStaticThreadPool.scheduleAtFixedRate(electionTask, 6000, NodeConfig.TASK_DELAY);
         RaftStaticThreadPool.scheduleWithFixedDelay(replicationTask, NodeConfig.TASK_DELAY);
 
         // start 3 module
-        this.logModule = new RaftLogModule();
+        this.logModule = new RaftLogModule(this.logStorage);
         this.consensus = new RaftConsensus(this);
         this.stateMachine = new RaftStateMachine(this.storage);
     }

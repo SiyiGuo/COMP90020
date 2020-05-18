@@ -41,11 +41,9 @@ public class Application {
     public static final HashMap<Integer, NodeInfo> ALL_NODES = new HashMap<>();
 
     public static void main(String[] args) {
-        System.setProperty("io.grpc.netty.level", "INFO");
-        System.setProperty("handlers", "java.util.logging.ConsoleHandler");
-        System.setProperty("java.util.logging.ConsoleHandler.level", "INFO");
-        Properties pros = System.getProperties();
-        pros.list(System.out);
+        Logger.getLogger("").setLevel(Level.FINE);
+        Logger.getLogger("").getHandlers()[0].setLevel(Level.FINE);
+        Logger.getLogger("io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler").setLevel(Level.FINE);
 
         // address initiate
         for (Integer port : PORTS) {
