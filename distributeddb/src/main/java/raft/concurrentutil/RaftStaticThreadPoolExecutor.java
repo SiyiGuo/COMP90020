@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RaftStaticThreadPoolExecutor extends ThreadPoolExecutor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RaftThreadPoolExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RaftStaticThreadPoolExecutor.class);
 
     private static final ThreadLocal<Long> COST_TIME_WATCH = ThreadLocal.withInitial(System::currentTimeMillis);
 
