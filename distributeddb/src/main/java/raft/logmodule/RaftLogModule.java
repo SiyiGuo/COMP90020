@@ -26,10 +26,12 @@ public class RaftLogModule implements LogModule {
 
     @Override
     public RaftLogEntry getLog(Long index) {
-        if (index >= this.logs.size()) {
+        // Takein index based from 1
+        // so need to convert back to array index 0
+        if (index > this.logs.size()) {
             return null;
         }
-        return this.logs.get(Math.toIntExact(index));
+        return this.logs.get(Math.toIntExact(index-1));
     }
 
     @Override
@@ -37,7 +39,7 @@ public class RaftLogModule implements LogModule {
         // AppendEntries RPC
         // if an existing entry conflicts with a new one (same index but different terms)
         // delete the existing entry and all that follow it
-        this.logs.subList(Math.toIntExact(startIndex), this.logs.size()).clear();
+        this.logs.subList(Math.toIntExact(startIndex)-1, this.logs.size()).clear();
         this.storage.removeOnStartIndex(System.currentTimeMillis(), startIndex);
     }
 
@@ -64,10 +66,7 @@ public class RaftLogModule implements LogModule {
     @Override
     public Long getLastIndex() {
         // index from one
-        if (this.logs.size() > 0) {
-            return (long)(this.logs.size());
-        }
-        return (long) 0;
+        return (long)(this.logs.size());
     }
 
     public ArrayList<RaftLogEntry> getAllLogs() {

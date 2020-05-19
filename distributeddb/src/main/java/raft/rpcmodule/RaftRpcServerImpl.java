@@ -65,12 +65,16 @@ public class RaftRpcServerImpl extends RaftRpcServiceGrpc.RaftRpcServiceImplBase
     @Override
     public void appendEntries(AppendEntriesRequest request, StreamObserver<AppendEntriesResponse> responseObserver) {
         List<RaftLogEntry> entries = new ArrayList<RaftLogEntry>();
+
         for (LogEntry entry : request.getEntriesList()) {
             entries.add(new RaftLogEntry(
                     entry.getTerm(), entry.getIndex(),
                     RaftCommand.valueOf(entry.getCommand()),
                     entry.getKey(), entry.getValue()));
         }
+
+        entries.forEach(e->{System.out.println("receivedL: " + e.toString()) ;});
+
         RaftAppendEntriesResult result = this.nodeHook.handleAppendEntries(new RaftAppendEntriesArgs(
                 request.getTerm(),
                 request.getLeaderId(),

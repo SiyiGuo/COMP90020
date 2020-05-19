@@ -3,6 +3,7 @@ package raft.consensusmodule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.Consensus;
+import raft.concurrentutil.Cu;
 import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
 import raft.statemachinemodule.RaftState;
@@ -72,6 +73,7 @@ public class RaftConsensus implements Consensus {
          */
         if (this.node.getState() == RaftState.FOLLOWER) {
             // Reply false if term < currentTerm
+            System.err.println("Follower Receiving appendEntries args: " + args);
             if (args.term < this.node.getCurrentTerm()) {
                 return new RaftAppendEntriesResult(this.node.getCurrentTerm(), false);
             }
@@ -89,6 +91,12 @@ public class RaftConsensus implements Consensus {
                     this.node.getLogModule().getLog(args.prevLogIndex).term != args.prevLogTerm
                     )
             ) {
+                System.err.println("false as log term doesn't match");
+                System.err.println(args);
+                System.err.println(this.node.getLogModule().getLog(args.prevLogIndex));
+                this.node.getLogModule().getAllLogs().forEach(l->{
+                    System.out.println(l);
+                });
                 return new RaftAppendEntriesResult(this.node.getCurrentTerm(), false);
             }
 
@@ -99,21 +107,24 @@ public class RaftConsensus implements Consensus {
              */
             ArrayList<RaftLogEntry> newEntries = new ArrayList<>();
             for(RaftLogEntry newEntry: args.entries) {
+                Cu.debug("new:"+newEntry);
                 RaftLogEntry existingEntry = this.node.getLogModule().getLog(newEntry.index);
+                Cu.debug("old: " + existingEntry);
                 if (existingEntry != null && existingEntry.term != newEntry.term) {
                     // There is a conflict. delete existing entry and all that follow it
                     this.node.getLogModule().removeOnStartIndex(newEntry.index);
                 } else {
+                    Cu.debug("size: " + newEntries.size());
                     newEntries.add(newEntry);
                 }
             }
 
             //Append new entries not already in the log
-            newEntries.forEach((newEntry) -> {
-                this.node.getLogModule().append(newEntry);
-                // TODO: check whether I should apply statemachine here
-                this.node.getStateMachine().apply(newEntry);
-            });
+            System.err.println("***printing new entry***" + newEntries.size());
+            for(RaftLogEntry entry: newEntries) {
+                System.err.println("addinnnnng new!" + entry);
+                this.node.getLogModule().append(entry);
+            }
 
             // if leaderCommit > commitINdex, set commitIndex = min(leaderCommit, index of alst new entry)
             if (args.leaderCommit > this.node.getCommitIndex()) {

@@ -24,4 +24,17 @@ public class RaftAppendEntriesArgs {
         this.entries = entries;
         this.leaderCommit = leaderCommit;
     }
+
+    @Override
+    public String toString() {
+        String result =  String.format(
+                "term:%s leaderId:%s prevLogIndex:%s prevLogTerm:%s leaderCommit:%s",
+                term, leaderId, prevLogIndex, prevLogTerm, leaderCommit
+        );
+        result += "\nEntries:\n";
+        for(RaftLogEntry e: entries) {
+            result += (e+"\n");
+        }
+        return result;
+    }
 }

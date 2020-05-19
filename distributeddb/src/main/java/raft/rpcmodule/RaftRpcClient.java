@@ -76,6 +76,7 @@ public class RaftRpcClient {
                 .setLeaderCommit(args.leaderCommit);
 
         for (RaftLogEntry entry : args.entries) {
+            System.err.println("--------append entries built " + entry.toString());
             LogEntry logEntry = LogEntry.newBuilder()
                     .setTerm(entry.term)
                     .setIndex(entry.index)
