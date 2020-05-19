@@ -1,5 +1,7 @@
 package application.storage;
 
+import raft.concurrentutil.Cu;
+
 import java.util.HashMap;
 
 public class InMemoryStorage implements Storage {
@@ -27,6 +29,7 @@ public class InMemoryStorage implements Storage {
     @Override
     public boolean put(String key, String value) {
         this.storage.put(key, value);
+        Cu.debug("-------------------Put success!!!: " + this.storage.get(key));
         return true;
     }
 

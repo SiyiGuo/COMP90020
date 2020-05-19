@@ -7,4 +7,5 @@ public enum RaftCommand {
     UPDATE,
     FINDLEADER,
     GETALLLOGS,
+    GETSNAPSHOT
 }

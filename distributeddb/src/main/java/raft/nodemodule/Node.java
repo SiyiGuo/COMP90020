@@ -171,6 +171,9 @@ public class Node implements LifeCycle, Runnable {
          */
         if (this.nodeId == this.addressBook.getLeaderId()) {
             switch (req.command) {
+                case GETSNAPSHOT:
+                    String snapshot = "";
+                    return new RaftClientResponse(req.command, req.key, snapshot);
                 case GETALLLOGS:
                     String result = "";
                     for (RaftLogEntry entry: this.getLogModule().getAllLogs()) {

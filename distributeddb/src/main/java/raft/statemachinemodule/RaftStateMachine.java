@@ -2,6 +2,7 @@ package raft.statemachinemodule;
 
 import application.storage.Storage;
 import raft.StateMachine;
+import raft.concurrentutil.Cu;
 import raft.logmodule.RaftLogEntry;
 
 /*
@@ -18,6 +19,7 @@ public class RaftStateMachine implements StateMachine {
     public void apply(RaftLogEntry raftLogEntry) {
         String key = raftLogEntry.key;
         String value = raftLogEntry.value;
+        Cu.debug("State machine apply: " + raftLogEntry);
         switch (raftLogEntry.command) {
             case GET:
                 break;
@@ -47,14 +49,16 @@ public class RaftStateMachine implements StateMachine {
         try {
             return this.stroage.get(key);
         } catch (Exception e) {
+            System.err.println("******************");
             System.err.println(e.getMessage());
+            System.err.println(e.getStackTrace());
             return "Key not present";
         }
     }
 
     @Override
     public void setString(String key, String value) {
-        boolean result = this.stroage.put(key, value);
+        this.stroage.put(key, value);
     }
 
     @Override
