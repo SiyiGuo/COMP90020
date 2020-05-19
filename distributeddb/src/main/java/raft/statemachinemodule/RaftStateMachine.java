@@ -19,7 +19,6 @@ public class RaftStateMachine implements StateMachine {
     public void apply(RaftLogEntry raftLogEntry) {
         String key = raftLogEntry.key;
         String value = raftLogEntry.value;
-        Cu.debug("State machine apply: " + raftLogEntry);
         switch (raftLogEntry.command) {
             case GET:
                 break;
