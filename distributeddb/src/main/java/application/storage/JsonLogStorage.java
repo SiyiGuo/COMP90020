@@ -28,6 +28,11 @@ public class JsonLogStorage implements LogStorage {
         this.writeJsonToFile();
     }
 
+    @Override
+    public void setLogName(String nodeId){
+        this.logName = nodeId + ".json";
+    }
+
     private void writeJsonToFile() {
         JSONArray jsLogs = new JSONArray();
 
@@ -41,4 +46,6 @@ public class JsonLogStorage implements LogStorage {
             e.printStackTrace();
         }
     }
+
+
 }

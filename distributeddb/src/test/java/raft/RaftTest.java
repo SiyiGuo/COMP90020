@@ -1,6 +1,8 @@
 package raft;
 
 import application.storage.InMemoryStorage;
+import application.storage.JsonLogStorage;
+import application.storage.LogStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.io.File;
 
 public class RaftTest {
     final static Logger logger = LogManager.getLogger(RaftTest.class);
@@ -152,5 +155,22 @@ public class RaftTest {
             nodeThreads[i].interrupt();
             nodes[i].destroy();
         }
+    }
+
+    @Test
+    public void testLogSaving() {
+        LogStorage storage = new JsonLogStorage();
+        storage.setLogName("test");
+        RaftLogEntry sample = new RaftLogEntry(0, 0, RaftCommand.GET, "", "");
+        storage.add(System.currentTimeMillis(), sample);
+        File jsLog = new File("test.json");
+        boolean exists = jsLog.exists();
+        Assert.assertEquals(true, exists);
+        try {
+            jsLog.delete();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 }

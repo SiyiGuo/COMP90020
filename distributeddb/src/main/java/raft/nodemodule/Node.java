@@ -89,8 +89,9 @@ public class Node implements LifeCycle, Runnable {
 
         this.addressBook = addressBook;
         this.storage = storage;
-        this.logStorage = logStorage;
         this.nodeId = this.addressBook.getSelfInfo().nodeId;
+        this.logStorage = logStorage;
+        this.logStorage.setLogName(Integer.toString(this.nodeId));
         this.nodehook = this;
 
         this.commitIndex = 0;
