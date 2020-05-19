@@ -171,6 +171,12 @@ public class Node implements LifeCycle, Runnable {
          */
         if (this.nodeId == this.addressBook.getLeaderId()) {
             switch (req.command) {
+                case GETALLLOGS:
+                    String result = "";
+                    for (RaftLogEntry entry: this.getLogModule().getAllLogs()) {
+                        result += entry + "\n";
+                    }
+                    return new RaftClientResponse(req.command, req.key, result);
                 case FINDLEADER:
                     return new RaftClientResponse(req.command, req.key,
                             Integer.toString(this.addressBook.getLeaderId()));
@@ -181,7 +187,7 @@ public class Node implements LifeCycle, Runnable {
                     // Append entry to local log
                     RaftLogEntry clientEntry = new RaftLogEntry(
                             this.getCurrentTerm(),
-                            this.logModule.getLastIndex(),
+                            this.logModule.getLastIndex()+1, //log is index from one
                             req.command,
                             req.key,
                             req.value
@@ -286,6 +292,10 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public void updateNodeNextIndex(int nodeId, long newNextIndex) {
+        if (newNextIndex < 0) {
+            System.err.println("Error with node: " + nodeId);
+            System.exit(1);
+        }
         this.nextIndex.put(nodeId, newNextIndex);
     }
 
@@ -331,11 +341,16 @@ public class Node implements LifeCycle, Runnable {
         // Rules for Servers: All Servers
         // If commitIndex > lastApplied.
         // Increment lastApplied/ Apply log[lastApplied] to state machine.
-        System.err.println("-----------committing---------------");
+        System.err.println("-----------setCommitIndex---------------");
         System.err.println(commitIndex);
         System.err.println(this.lastApplied);
         if (this.commitIndex > this.lastApplied) {
             for(long i = this.lastApplied; i <= this.commitIndex; i++) {
+                if (lastApplied == 0) {
+                    // 0 is default value that should not be use
+                    continue;
+                }
+                System.err.println(this.logModule.getLog(i) + "applied");
                 this.stateMachine.apply(this.logModule.getLog(i));
             }
             this.lastApplied = this.commitIndex;

@@ -66,10 +66,7 @@ public class RaftLogModule implements LogModule {
     @Override
     public Long getLastIndex() {
         // index from one
-        if (this.logs.size() > 0) {
-            return (long)(this.logs.size());
-        }
-        return (long) 0;
+        return (long)(this.logs.size());
     }
 
     public ArrayList<RaftLogEntry> getAllLogs() {

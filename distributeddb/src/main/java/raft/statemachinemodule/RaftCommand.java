@@ -6,4 +6,5 @@ public enum RaftCommand {
     DELETE,
     UPDATE,
     FINDLEADER,
+    GETALLLOGS,
 }

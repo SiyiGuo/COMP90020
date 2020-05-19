@@ -41,7 +41,7 @@ public class LeaderLogReplicationTask implements Runnable {
                 RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
                         this.node.getCurrentTerm(),
                         this.node.nodeId,
-                        lastIndex,
+                        this.node.getNodeMatchIndex(nodeInfo.nodeId),
                         this.node.getLogModule().getLast().term,
                         this.node.getLogModule().getLogsOnStartIndex(nodeNextIndex),
                         this.node.getCommitIndex()
