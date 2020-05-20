@@ -349,9 +349,6 @@ public class Node implements LifeCycle, Runnable {
         System.err.println(this.lastApplied);
         if (this.commitIndex > this.lastApplied) {
             for(long i = this.lastApplied+1; i <= commitIndex; i++) {
-//                if (i == 0) {
-//                    continue;
-//                }
                 System.err.println(this.logModule.getLog(i) + "applied");
                 this.stateMachine.apply(this.logModule.getLog(i));
             }
