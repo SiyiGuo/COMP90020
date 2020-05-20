@@ -1,5 +1,6 @@
 package raft.nodemodule;
 
+import application.ServerHandler;
 import application.storage.DummyLogStorage;
 import application.storage.LogStorage;
 import application.storage.Storage;
@@ -83,6 +84,8 @@ public class Node implements LifeCycle, Runnable {
     private ElectionTask electionTask;
     private LeaderLogReplicationTask replicationTask;
 
+    private ServerHandler serverHandler;
+
     public Node(NodeConfig config, AddressBook addressBook, Storage storage, LogStorage logStorage) {
         this.config = config;
         this.rpcCount = 0;
@@ -137,6 +140,7 @@ public class Node implements LifeCycle, Runnable {
         this.logModule = new RaftLogModule(this.logStorage);
         this.consensus = new RaftConsensus(this);
         this.stateMachine = new RaftStateMachine(this.storage);
+        this.serverHandler = new ServerHandler(this);
     }
 
     @Override
@@ -165,52 +169,12 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public RaftClientResponse handleClientRequest(RaftClientRequest req) {
-        /*
-        TODO:
-        If command received from client.
-         */
-        if (this.nodeId == this.addressBook.getLeaderId()) {
-            switch (req.command) {
-                case GETSNAPSHOT:
-                    String snapshot = "";
-                    return new RaftClientResponse(req.command, req.key, snapshot);
-                case GETALLLOGS:
-                    String result = "";
-                    for (RaftLogEntry entry: this.getLogModule().getAllLogs()) {
-                        result += "\n" + entry;
-                    }
-                    return new RaftClientResponse(req.command, req.key, result);
-                case FINDLEADER:
-                    return new RaftClientResponse(req.command, req.key,
-                            Integer.toString(this.addressBook.getLeaderId()));
-                case GET:
-                    return new RaftClientResponse(req.command, req.key,
-                            this.stateMachine.getString(req.key));
-                default:
-                    // Append entry to local log
-                    RaftLogEntry clientEntry = new RaftLogEntry(
-                            this.getCurrentTerm(),
-                            this.logModule.getLastIndex()+1, //log is index from one
-                            req.command,
-                            req.key,
-                            req.value
-                    );
-                    this.logModule.append(clientEntry);
-                    /*
-                    TODO:
-                    respond after entry applied to state machine
-                    Have a queue here? so that when index applied we return to client
-                     */
-                    return new RaftClientResponse(req.command, req.key, "success");
-            }
-        }
-        return this.redirect(req);
+        return this.serverHandler.handleClientRequest(req);
     }
 
     // redirect to leader
     public RaftClientResponse redirect(RaftClientRequest req) {
-        int leaderId = addressBook.getLeaderId();
-        return this.peers.get(leaderId).handleClientRequest(req);
+        return this.serverHandler.redirect(req);
     }
 
     public void actionsWhenBecameLeader() {
