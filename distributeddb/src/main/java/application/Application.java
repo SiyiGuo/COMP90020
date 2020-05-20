@@ -36,23 +36,24 @@ public class Application {
     public static final String PORT = "port";
     public static final String PEER = "peer";
     public static final String CONTROLLER = "controller";
+    public static final String HOST_ADDRESS = "host_address";
 
     public static final HashSet<Integer> PORTS = new HashSet<Integer>(Arrays.asList(8258, 8259, 8260));
     public static final HashMap<Integer, NodeInfo> ALL_NODES = new HashMap<>();
 
     public static void main(String[] args) {
         // address initiate
-        for (Integer port : PORTS) {
-            ALL_NODES.put(port, new NodeInfo(port, port, "localhost"));
-        }
 
         Options options = new Options();
         Option programMode = new Option("m", MODE, true, "Peer or Controller");
         Option listenPort = new Option("p", PORT, true, "Port peer will listen to");
+        Option hostAddress = new Option("h", HOST_ADDRESS, true, "host of this node");
 
         programMode.setRequired(true);
+        hostAddress.setRequired(true);
         options.addOption(programMode);
         options.addOption(listenPort);
+        options.addOption(hostAddress);
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -68,8 +69,12 @@ public class Application {
         }
 
         String mode = cmd.getOptionValue(MODE);
+        for (Integer peerPort : PORTS) {
+            ALL_NODES.put(peerPort, new NodeInfo(peerPort, peerPort, cmd.getOptionValue(HOST_ADDRESS)));
+        }
+
         if (mode.equalsIgnoreCase(PEER)) {
-            String port = cmd.getOptionValue(PORT);
+            String port = cmd.getOptionValue(PORT);            
             NodeMode(Integer.parseInt(port));
         }
 
@@ -101,7 +106,11 @@ public class Application {
             String[] values = input.split(",", 3);
             if (values.length != 3) {
                 System.err.println("Invalid format");
-                System.out.println("Command format: COMMAND,KEY,VALUE\n");
+                Stirng commands = ""
+                for(enum s: RaftCommand) {
+                    commands += s.name();
+                }
+                System.out.println("Command format: " + commands);
                 continue;
             }
 
