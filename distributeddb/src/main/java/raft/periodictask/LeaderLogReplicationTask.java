@@ -2,6 +2,7 @@ package raft.periodictask;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import raft.concurrentutil.Cu;
 import raft.concurrentutil.RaftStaticThreadPool;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
@@ -20,7 +21,7 @@ public class LeaderLogReplicationTask implements Runnable {
         this.node = nodehook;
     }
 
-    public void replicateLog(NodeInfo nodeInfo) {
+    public void replicateLogForNode(NodeInfo nodeInfo) {
          /*
         If last log index ≥ nextIndex for a follower: send
         AppendEntries RPC with log entries starting at nextIndex
@@ -38,17 +39,34 @@ public class LeaderLogReplicationTask implements Runnable {
                     return;
                 }
 
+                long prevLogIndex = this.node.getNodeNextIndex(nodeInfo.nodeId) - 1;
+                long pevLogTerm;
+                if (prevLogIndex == 0) {
+                    pevLogTerm = this.node.getCurrentTerm();
+                } else{
+                    pevLogTerm = this.node.getLogModule().getLog(prevLogIndex).term;
+                }
                 RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
                         this.node.getCurrentTerm(),
                         this.node.nodeId,
-                        this.node.getNodeMatchIndex(nodeInfo.nodeId),
-                        this.node.getLogModule().getLast().term,
+                        prevLogIndex,
+                        pevLogTerm,
                         this.node.getLogModule().getLogsOnStartIndex(nodeNextIndex),
                         this.node.getCommitIndex()
                 );
-                RaftAppendEntriesResult result = this.node.getNodeRpcClient(nodeInfo.nodeId).appendEntries(request);
-                logger.debug("Node{} lastIndex{} nodeNextIndex{} AppendEntries Response {}"
-                        , nodeInfo.nodeId, lastIndex, nodeNextIndex, result);
+
+                RaftAppendEntriesResult result;
+                try {
+                     result = this.node.getNodeRpcClient(nodeInfo.nodeId).appendEntries(request);
+                } catch (Exception e) {
+                    Cu.debug("Errpr when appendEntries for: " + nodeInfo.nodeId);
+                    Cu.debug("Args:");
+                    Cu.debug(request);
+                    e.printStackTrace();
+                    return;
+                }
+
+                Cu.debug("Node: "+nodeInfo.nodeId + "AppendEntries Response Back: \n" + result);
 
                 if (RulesForServers.compareTermAndBecomeFollower(result.term, this.node)) {
                     return;
@@ -66,7 +84,7 @@ public class LeaderLogReplicationTask implements Runnable {
                     long newNextIndex = nodeNextIndex - 1;
                     this.node.updateNodeNextIndex(nodeInfo.nodeId, newNextIndex);
                     // and retry
-                    this.replicateLog(nodeInfo);
+                    this.replicateLogForNode(nodeInfo);
                 }
                 return;
             }, false);
@@ -80,7 +98,7 @@ public class LeaderLogReplicationTask implements Runnable {
         }
         for(NodeInfo nodeInfo: this.node.addressBook.getPeerInfo()) {
             // this might be called recursively
-            this.replicateLog(nodeInfo);
+            this.replicateLogForNode(nodeInfo);
         }
 
         /*
@@ -102,7 +120,6 @@ public class LeaderLogReplicationTask implements Runnable {
 
         int i = 0;
         for(long N: allIndexCandidates) {
-            i += 1;
             // a majority of matchIndex[i] ≥ N。 Since Arraylist is sorted, all matchIndex[i:] >= N;
             System.out.println(String.format("getLogModule:%s currentTerm:%s",
                     this.node.getLogModule().getLog(N),
@@ -116,6 +133,7 @@ public class LeaderLogReplicationTask implements Runnable {
                     break;
                 }
             }
+            i += 1;
         }
     }
 }

@@ -26,17 +26,17 @@ public class RaftStaticThreadPoolExecutor extends ThreadPoolExecutor {
     @Override
     protected void beforeExecute(Thread t, Runnable r) {
         COST_TIME_WATCH.get();
-        LOGGER.debug("raft thread pool before Execute");
+//        LOGGER.debug("raft thread pool before Execute");
     }
 
     @Override
     protected void afterExecute(Runnable r, Throwable t) {
-        LOGGER.debug("raft thread pool after Execute, cost time : {}", System.currentTimeMillis() - COST_TIME_WATCH.get());
+//        LOGGER.debug("raft thread pool after Execute, cost time : {}", System.currentTimeMillis() - COST_TIME_WATCH.get());
         COST_TIME_WATCH.remove();
     }
 
     @Override
     protected void terminated() {
-        LOGGER.info("active count : {}, queueSize : {}, poolSize : {}", getActiveCount(), getQueue().size(), getPoolSize());
+//        LOGGER.info("active count : {}, queueSize : {}, poolSize : {}", getActiveCount(), getQueue().size(), getPoolSize());
     }
 }
