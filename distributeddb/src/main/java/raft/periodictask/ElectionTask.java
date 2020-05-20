@@ -41,7 +41,12 @@ public class ElectionTask implements Runnable {
              */
         // wait for a random amount of variable
         long currentTime = System.currentTimeMillis();
-        if (currentTime - this.node.getLastElectionTime() < this.node.getTimeOut()) return;
+        if (currentTime - this.node.getLastElectionTime() < this.node.getTimeOut()) {
+            System.err.println("timeout not met since last heart beat at "+this.node.getLastElectionTime());
+            return;
+        }
+
+        System.err.println("Starting new election");
 
             /*
            start election.

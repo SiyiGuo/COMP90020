@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import raft.LifeCycle;
 import raft.concurrentutil.RaftStaticThreadPool;
+import raft.concurrentutil.SleepHelper;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
 import raft.consensusmodule.RaftConsensus;
@@ -23,6 +24,7 @@ import raft.ruleset.RulesForServers;
 import raft.statemachinemodule.RaftState;
 import raft.statemachinemodule.RaftStateMachine;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -142,6 +144,17 @@ public class Node implements LifeCycle, Runnable {
     @Override
     public void destroy() {
         this.rpcServer.stop();
+    }
+
+    public void rpcServerWait(int time){
+        this.rpcServer.stop();
+        SleepHelper.sleep(time);
+        try{
+            this.rpcServer.start();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
     }
 
     @Override
