@@ -103,6 +103,8 @@ public class Node implements LifeCycle, Runnable {
         this.heartBeatTask = new HeartBeatTask(this);
         this.electionTask = new ElectionTask(this);
         this.replicationTask = new LeaderLogReplicationTask(this);
+        
+        this.serverHandler = new ServerHandler(this);
     }
 
     public Node(NodeConfig config, AddressBook addressBook, Storage storage) {
@@ -140,7 +142,6 @@ public class Node implements LifeCycle, Runnable {
         this.logModule = new RaftLogModule(this.logStorage);
         this.consensus = new RaftConsensus(this);
         this.stateMachine = new RaftStateMachine(this.storage);
-        this.serverHandler = new ServerHandler(this);
     }
 
     @Override
