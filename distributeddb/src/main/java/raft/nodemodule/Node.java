@@ -103,7 +103,7 @@ public class Node implements LifeCycle, Runnable {
         this.heartBeatTask = new HeartBeatTask(this);
         this.electionTask = new ElectionTask(this);
         this.replicationTask = new LeaderLogReplicationTask(this);
-        
+
         this.serverHandler = new ServerHandler(this);
     }
 
@@ -170,11 +170,13 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public RaftClientResponse handleClientRequest(RaftClientRequest req) {
+        // seperate algorithm logic from application logic.
         return this.serverHandler.handleClientRequest(req);
     }
 
     // redirect to leader
     public RaftClientResponse redirect(RaftClientRequest req) {
+        // seperate algorithm logic from application logic.
         return this.serverHandler.redirect(req);
     }
 
@@ -201,7 +203,6 @@ public class Node implements LifeCycle, Runnable {
             this.nextIndex.put(info.nodeId, initIndex);
             this.matchIndex.put(info.nodeId, 0L);
         }
-
     }
 
     public void sendEmptyAppendEntries() {
