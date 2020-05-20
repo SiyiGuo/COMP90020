@@ -66,7 +66,16 @@ class TimelineComponent extends Component {
                 const entries = logs[node_id];
                 return (
                   <div className="Row">
-                    <p className="Column">{node_id}</p>
+                    <div 
+                      className="Column" 
+                      style={{
+                          width:'70px', 
+                          backgroundColor: entries[entries.length - 1].state == 'leader' ? 'red' : ''
+                          }}>
+                      <p>
+                          {entries[entries.length - 1].state}<br/>{node_id}
+                      </p>
+                    </div>
                     {
                       this.drawNode(entries)
                     }

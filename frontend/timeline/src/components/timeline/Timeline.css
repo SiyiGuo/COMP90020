@@ -6,6 +6,8 @@
 }
 
 .Column {
+  text-align: center;
+  vertical-align: middle;
   display: table-cell;
   background-color: whitesmoke /*Optional*/
 }
