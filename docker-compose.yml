@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  node1:
+    image: raft
+    ports:
+      - "8258:8258"
+    command: -m peer -p 8258
+
+  node2:
+    image: raft
+    ports:
+      - "8259:8259"
+    command: -m peer -p 8259
+
+  node3:
+    image: raft
+    ports:
+      - "8260:8260"
+    command: -m peer -p 8260
