@@ -106,9 +106,9 @@ public class Application {
             String[] values = input.split(",", 3);
             if (values.length != 3) {
                 System.err.println("Invalid format");
-                Stirng commands = ""
-                for(enum s: RaftCommand) {
-                    commands += s.name();
+                String commands = "";
+                for(RaftCommand s: RaftCommand.values()) {
+                    commands += s.name() + ", ";
                 }
                 System.out.println("Command format: " + commands);
                 continue;
