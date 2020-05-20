@@ -1,21 +1,21 @@
 {
   "all_nodes": ["8258", "8259", "8260"],
   "init_status": {
-    "8258": {"term": 2, "index": 9, "committed_index": 8, "log_entry": {"command": "PUT", "key": "test", "value": "20"}},
-    "8259": {"term": 2, "index": 9, "committed_index": 8, "log_entry": {"command": "PUT", "key": "test", "value": "20"}},
+    "8258": {"state": "leader", "term": 2, "index": 9, "committed_index": 8, "log_entry": {"command": "PUT", "key": "test", "value": "20"}},
+    "8259": {"state": "follower", "term": 2, "index": 9, "committed_index": 8, "log_entry": {"command": "PUT", "key": "test", "value": "20"}},
     "8260": ""
   },
   "following_logs": {
     "1589893378546": {
-      "8260": {"term": 2, "index": 9, "committed_index": 8, "log_entry": {"command": "PUT", "key": "test", "value": "20"}}
+      "8260": {"state": "follower", "term": 2, "index": 9, "committed_index": 8, "log_entry": {"command": "PUT", "key": "test", "value": "20"}}
     },
     "1589893378046": {
-      "8258": {"term": 2, "index": 11, "committed_index": 10, "log_entry": {"command": "PUT", "key": "test", "value": "20"}},
-      "8259": {"term": 2, "index": 11, "committed_index": 10, "log_entry": {"command": "PUT", "key": "test", "value": "20"}}
+      "8258": {"state": "leader", "term": 2, "index": 11, "committed_index": 10, "log_entry": {"command": "PUT", "key": "test", "value": "20"}},
+      "8259": {"state": "follower", "term": 2, "index": 11, "committed_index": 10, "log_entry": {"command": "PUT", "key": "test", "value": "20"}}
     },
     "1589893377546": {
-      "8258": {"term": 2, "index": 10, "committed_index": 9, "log_entry": {"command": "PUT", "key": "test", "value": "20"}},
-      "8259": {"term": 2, "index": 10, "committed_index": 9, "log_entry": {"command": "PUT", "key": "test", "value": "20"}}
+      "8258": {"state": "leader", "term": 2, "index": 10, "committed_index": 9, "log_entry": {"command": "PUT", "key": "test", "value": "20"}},
+      "8259": {"state": "follower", "term": 2, "index": 10, "committed_index": 9, "log_entry": {"command": "PUT", "key": "test", "value": "20"}}
     }
   }
 }
