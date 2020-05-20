@@ -348,11 +348,7 @@ public class Node implements LifeCycle, Runnable {
         System.err.println(commitIndex);
         System.err.println(this.lastApplied);
         if (this.commitIndex > this.lastApplied) {
-            for(long i = this.lastApplied; i <= this.commitIndex; i++) {
-                if (lastApplied == 0) {
-                    // 0 is default value that should not be use
-                    continue;
-                }
+            for(long i = this.lastApplied+1; i <= this.commitIndex; i++) {
                 System.err.println(this.logModule.getLog(i) + "applied");
                 this.stateMachine.apply(this.logModule.getLog(i));
             }
