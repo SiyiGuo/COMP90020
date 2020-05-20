@@ -6,12 +6,14 @@ import raft.concurrentutil.Cu;
 import raft.concurrentutil.RaftStaticThreadPool;
 import raft.consensusmodule.RaftAppendEntriesArgs;
 import raft.consensusmodule.RaftAppendEntriesResult;
+import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
 import raft.nodemodule.NodeInfo;
 import raft.ruleset.RulesForServers;
 import raft.statemachinemodule.RaftState;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class LeaderLogReplicationTask implements Runnable {
     public final static Logger logger = LogManager.getLogger(LeaderLogReplicationTask.class);
@@ -46,12 +48,14 @@ public class LeaderLogReplicationTask implements Runnable {
                 } else{
                     pevLogTerm = this.node.getLogModule().getLog(prevLogIndex).term;
                 }
+
+                List<RaftLogEntry> entries = this.node.getLogModule().getLogsOnStartIndex(nodeNextIndex);
                 RaftAppendEntriesArgs request = new RaftAppendEntriesArgs(
                         this.node.getCurrentTerm(),
                         this.node.nodeId,
                         prevLogIndex,
                         pevLogTerm,
-                        this.node.getLogModule().getLogsOnStartIndex(nodeNextIndex),
+                        entries,
                         this.node.getCommitIndex()
                 );
 
@@ -75,7 +79,7 @@ public class LeaderLogReplicationTask implements Runnable {
                 if (result.success) {
                     // • If successful: update nextIndex and matchIndex for follower (§5.3)
                     long newMatchIndex = this.node.getLogModule().getLastIndex();
-                    long newNextIndex = newMatchIndex + 1;
+                    long newNextIndex = newMatchIndex + entries.size();
                     this.node.updateMatchIndex(nodeInfo.nodeId, newMatchIndex);
                     this.node.updateNodeNextIndex(nodeInfo.nodeId, newNextIndex);
                 } else {
