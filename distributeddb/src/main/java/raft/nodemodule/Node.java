@@ -261,10 +261,12 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public void updateNodeNextIndex(int nodeId, long newNextIndex) {
-        if (newNextIndex < 0) {
+        if (newNextIndex < 1) {
             System.err.println("Error with node: " + nodeId);
-            System.exit(1);
+            return;
         }
+        // the min of NextIndex should be 1
+        // this is when node came in with no log.
         this.nextIndex.put(nodeId, newNextIndex);
     }
 
