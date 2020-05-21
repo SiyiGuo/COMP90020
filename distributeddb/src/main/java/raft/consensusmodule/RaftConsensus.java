@@ -123,7 +123,7 @@ public class RaftConsensus implements Consensus {
             System.err.println("***printing new entry***" + newEntries.size());
             for(RaftLogEntry entry: newEntries) {
                 System.err.println("addinnnnng new!" + entry);
-                this.node.getLogModule().append(entry);
+                this.node.getLogModule().append(entry, this.node.addressBook.getLeaderId());
             }
 
             // if leaderCommit > commitINdex, set commitIndex = min(leaderCommit, index of alst new entry)

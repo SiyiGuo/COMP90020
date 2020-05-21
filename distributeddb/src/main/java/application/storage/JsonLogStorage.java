@@ -19,9 +19,10 @@ public class JsonLogStorage implements LogStorage {
     private JSONObject historyLogs = new JSONObject();
 
     @Override
-    public void add(long timestamp, RaftLogEntry logEntry) {
+    public void add(long timestamp, RaftLogEntry logEntry, int leaderId) {
         JSONObject log = logEntry.toJson();
         log.put("timestamp", timestamp);
+        log.put("leader", leaderId);
         this.logs.add(log);
         this.writeJsonToFile();
     }
