@@ -19,6 +19,9 @@ public class HeartBeatTask implements Runnable {
 
     @Override
     public void run() {
+        /*
+        Leader send AppendEntries RPC with empty entries as heartbeat
+        */
         if (this.node.getState() != RaftState.LEADER) {
             return;
         }

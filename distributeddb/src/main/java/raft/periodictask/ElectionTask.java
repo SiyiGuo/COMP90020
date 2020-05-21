@@ -32,20 +32,20 @@ public class ElectionTask implements Runnable {
         // look into time stamp
         if (this.node.getState() == RaftState.LEADER) return;
 
-            /*
-            Work as Follower / Candidate
-            Followers (§5.2): If election timeout elapses without receiving AppendEntries
-            RPC from current leader or granting vote to candidate:
-            convert to candidate
-            Candidates (§5.2): If election timeout elapses: start new election
-             */
+        /*
+        Work as Follower / Candidate
+        Followers (§5.2): If election timeout elapses without receiving AppendEntries
+        RPC from current leader or granting vote to candidate:
+        convert to candidate
+        Candidates (§5.2): If election timeout elapses: start new election
+         */
         // wait for a random amount of variable
         long currentTime = System.currentTimeMillis();
         if (currentTime - this.node.getLastElectionTime() < this.node.getTimeOut()) return;
 
-            /*
-           start election.
-            */
+        /*
+        start election.
+        */
         this.node.setLastElectionTime(System.currentTimeMillis());
         this.node.setRandomTimeout();
 

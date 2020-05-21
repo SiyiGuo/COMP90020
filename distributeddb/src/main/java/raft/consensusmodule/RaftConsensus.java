@@ -6,8 +6,8 @@ import raft.Consensus;
 import raft.concurrentutil.Cu;
 import raft.logmodule.RaftLogEntry;
 import raft.nodemodule.Node;
-import raft.statemachinemodule.RaftState;
 import raft.ruleset.RulesForServers;
+import raft.statemachinemodule.RaftState;
 
 import java.util.ArrayList;
 
@@ -24,10 +24,6 @@ public class RaftConsensus implements Consensus {
 
     @Override
     public RaftRequestVoteResult handleRequestVote(RaftRequestVoteArgs args) {
-        // TODO: handle new joiner requestVote command
-        // TODO: when recieved unknown request, add it to addressBook?
-        // OR: send request to leader as registration
-
         RulesForServers.compareTermAndBecomeFollower(args.term, this.node);
 
         /*

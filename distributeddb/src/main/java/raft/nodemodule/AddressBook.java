@@ -36,10 +36,6 @@ public class AddressBook {
         return peers;
     }
 
-    public void addPeer(NodeInfo newPeer) {
-        this.peers.add(newPeer);
-    }
-
     public int getLeaderId() {
         return leaderId;
     }
