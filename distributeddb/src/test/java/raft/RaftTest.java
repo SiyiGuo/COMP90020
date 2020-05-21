@@ -162,15 +162,20 @@ public class RaftTest {
         LogStorage storage = new JsonLogStorage();
         storage.setLogName("test");
         RaftLogEntry sample = new RaftLogEntry(0, 0, RaftCommand.GET, "", "");
+        RaftLogEntry sample2 = new RaftLogEntry(0, 1, RaftCommand.GET, "", "");
         storage.add(System.currentTimeMillis(), sample);
+        storage.add(System.currentTimeMillis(), sample2);
         File jsLog = new File("test.json");
+        File historyJsLog = new File("history_test.json");
         boolean exists = jsLog.exists();
+        boolean exists2 = historyJsLog.exists();
         Assert.assertEquals(true, exists);
+        Assert.assertEquals(true, exists2);
         try {
             jsLog.delete();
+            historyJsLog.delete();
         } catch (Exception e){
             e.printStackTrace();
         }
-
     }
 }

@@ -1,6 +1,7 @@
 package raft.nodemodule;
 
 import application.storage.DummyLogStorage;
+import application.storage.JsonLogStorage;
 import application.storage.LogStorage;
 import application.storage.Storage;
 import org.apache.logging.log4j.LogManager;
@@ -104,7 +105,7 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public Node(NodeConfig config, AddressBook addressBook, Storage storage) {
-        this(config, addressBook, storage, new DummyLogStorage());
+        this(config, addressBook, storage, new JsonLogStorage());
     }
 
     @Override
