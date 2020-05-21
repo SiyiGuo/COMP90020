@@ -28,7 +28,7 @@ public class RaftLogEntry {
         obj.put("term", term);
         obj.put("key", key);
         obj.put("value", value);
-        obj.put("command", command);
+        obj.put("command", command.name());
         obj.put("index", index);
         return obj;
     }

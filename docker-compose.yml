@@ -16,7 +16,7 @@ services:
       - "8259:8259"
     command: -m peer -p 8259 -h host.docker.internal
     volumes:
-      - ./8258.json:/8259.json
+      - ./8259.json:/8259.json
       - ./history_8259.json:/history_8259.json
 
   node3:
