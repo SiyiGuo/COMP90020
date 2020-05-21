@@ -20,7 +20,7 @@ public class ServerHandler {
         if (this.node.nodeId == this.node.addressBook.getLeaderId()) {
             switch (req.command) {
                 case GETSTORAGE:
-                    String snapshot = "this is a stor";
+                    String snapshot = "\n";
                     snapshot += this.node.getStateMachine().getStorage().getAllValue();
                     return new RaftClientResponse(req.command, req.key, snapshot);
                 case GETALLLOGS:
