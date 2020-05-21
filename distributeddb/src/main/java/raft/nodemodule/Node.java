@@ -47,32 +47,24 @@ public class Node implements LifeCycle, Runnable {
     // config for this node
     public final NodeConfig config;
 
-    /*
-    Peers
-    RPC related
-     */
+    /* PeersRPC related */
     private RaftRpcServer rpcServer;
     public final AddressBook addressBook;
     public HashMap<Integer, RaftRpcClient> peers;
 
-    /*
-    ALgorithm related
-     */
+    /* Algorithm related */
     private RaftConsensus consensus;
     private volatile RaftLogModule logModule;
     private RaftStateMachine stateMachine;
 
     //state of this node
     private volatile RaftState state;
-    //Persistent state on all servers
     private volatile long currentTerm;
     private volatile int votedFor = NULL_VOTE; // candidate Id that received vote in a current term
     // volatile state on all servers
     private volatile long commitIndex; //highest log entry known to be commited
     private volatile long lastApplied;
-    // volatile state on leaders
-
-    // reinitialized after election
+    // volatile state on leaders. reinitialized after election
     private volatile ConcurrentHashMap<Integer, Long> nextIndex;
     private volatile ConcurrentHashMap<Integer, Long> matchIndex;
 
@@ -80,11 +72,17 @@ public class Node implements LifeCycle, Runnable {
     private volatile long lastHeartBeatTime = 0;
     private volatile long lastElectionTime = 0;
     private volatile long timeOut = 0;
-    // Task
+
+    /* IMPORTANT:
+    Periodic Task
+    This task are scheduled to run at fix interval.
+    They contains logic for leader election and log replication
+     */
     private HeartBeatTask heartBeatTask;
     private ElectionTask electionTask;
     private LeaderLogReplicationTask replicationTask;
 
+    // Application Related
     private ServerHandler serverHandler;
 
     public Node(NodeConfig config, AddressBook addressBook, Storage storage, LogStorage logStorage) {
@@ -172,17 +170,18 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public RaftClientResponse handleClientRequest(RaftClientRequest req) {
-        // seperate algorithm logic from application logic.
+        // separate algorithm logic from application logic.
         return this.serverHandler.handleClientRequest(req);
     }
 
     // redirect to leader
     public RaftClientResponse redirect(RaftClientRequest req) {
-        // seperate algorithm logic from application logic.
+        // separate algorithm logic from application logic.
         return this.serverHandler.redirect(req);
     }
 
     public void actionsWhenBecameLeader() {
+        // Set of things need to be done when the node became the leader
         /*
         Leaders:
         Upon election: send initial empty AppendEntries RPCs (heartbeat) to each server; repeat during idle periods to
@@ -208,6 +207,7 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public void sendEmptyAppendEntries() {
+        // Serves as heartbeat
         if (this.state != RaftState.LEADER) {
             logger.error("Node {} is not leader but triggered leader task", this.nodeId);
             return;

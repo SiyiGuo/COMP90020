@@ -14,8 +14,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author 莫那·鲁道
- * Taken from https://github.com/stateIs0/lu-raft-kv/blob/master/lu-raft-kv/src/main/java/cn/think/in/java/current/RaftThreadPool.java
+ A wrapper of thread pool for debuggin purpose.
  */
 public class RaftStaticThreadPool {
 
