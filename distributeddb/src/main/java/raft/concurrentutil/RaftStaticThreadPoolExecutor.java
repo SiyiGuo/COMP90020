@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author 莫那·鲁道
  * Taken from https://github.com/stateIs0/lu-raft-kv/blob/master/lu-raft-kv/src/main/java/cn/think/in/java/current/RaftThreadPoolExecutor.java
+ *
+ *  A wrapper of thread pool executor for debuggin purpose.
  */
 public class RaftStaticThreadPoolExecutor extends ThreadPoolExecutor {
 
