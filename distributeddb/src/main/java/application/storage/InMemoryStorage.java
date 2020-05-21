@@ -37,4 +37,13 @@ public class InMemoryStorage implements Storage {
         this.storage.remove(key);
         return true;
     }
+
+    @Override
+    public String getAllValue() {
+        String result = "";
+        for(String key: storage.keySet()) {
+            result += key + ": " + storage.get(key) + "\n";
+        }
+        return  result;
+    }
 }

@@ -1,0 +1,22 @@
+.Row {
+  display: table;
+  /* width: 100%; Optional */
+  /* table-layout: fixed; Optional */
+  border-spacing: 10px;
+}
+
+.Column {
+  text-align: center;
+  vertical-align: middle;
+  display: table-cell;
+  background-color: whitesmoke /*Optional*/
+}
+
+.rectangle {
+  text-align: center;
+  vertical-align: middle;
+  display: inline-block;
+  width: 60px;
+  height: 80px;
+  background: #BBFF33;
+}

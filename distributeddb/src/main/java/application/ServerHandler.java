@@ -19,8 +19,9 @@ public class ServerHandler {
          */
         if (this.node.nodeId == this.node.addressBook.getLeaderId()) {
             switch (req.command) {
-                case GETSNAPSHOT:
-                    String snapshot = "";
+                case GETSTORAGE:
+                    String snapshot = "\n";
+                    snapshot += this.node.getStateMachine().getStorage().getAllValue();
                     return new RaftClientResponse(req.command, req.key, snapshot);
                 case GETALLLOGS:
                     String result = "";
@@ -43,12 +44,7 @@ public class ServerHandler {
                             req.key,
                             req.value
                     );
-                    this.node.getLogModule().append(clientEntry);
-                    /*
-                    TODO:
-                    respond after entry applied to state machine
-                    Have a queue here? so that when index applied we return to client
-                     */
+                    this.node.getLogModule().append(clientEntry, this.node.addressBook.getLeaderId());
                     return new RaftClientResponse(req.command, req.key, "success");
             }
         }

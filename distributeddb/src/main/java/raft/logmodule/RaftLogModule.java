@@ -19,9 +19,9 @@ public class RaftLogModule implements LogModule {
     }
 
     @Override
-    public void append(RaftLogEntry raftLogEntry) {
+    public void append(RaftLogEntry raftLogEntry, int leaderId) {
         this.logs.add(raftLogEntry);
-        this.storage.add(System.currentTimeMillis(), raftLogEntry);
+        this.storage.add(System.currentTimeMillis(), raftLogEntry, leaderId);
     }
 
     @Override

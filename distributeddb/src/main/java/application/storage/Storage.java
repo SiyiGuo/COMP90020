@@ -5,4 +5,5 @@ public interface Storage {
     boolean update(String key, String value);
     boolean put(String key, String value);
     boolean delete(String key);
+    String getAllValue();
 }

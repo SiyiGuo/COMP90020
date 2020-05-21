@@ -2,6 +2,7 @@ package application;
 
 
 import application.storage.InMemoryStorage;
+import application.storage.JsonLogStorage;
 import io.grpc.netty.shaded.io.netty.util.internal.logging.InternalLoggerFactory;
 import io.grpc.netty.shaded.io.netty.util.internal.logging.Log4JLoggerFactory;
 import org.apache.commons.cli.CommandLine;
@@ -21,10 +22,12 @@ import raft.nodemodule.RaftClientResponse;
 import raft.rpcmodule.RaftRpcClient;
 import raft.statemachinemodule.RaftCommand;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Scanner;
@@ -38,12 +41,12 @@ public class Application {
     public static final String CONTROLLER = "controller";
     public static final String HOST_ADDRESS = "host_address";
 
-    public static final HashSet<Integer> PORTS = new HashSet<Integer>(Arrays.asList(8258, 8259, 8260));
+    public static final List<Integer> ALL_PORTS = Arrays.asList(8258, 8259, 8260);
+    public static final HashSet<Integer> PORTS = new HashSet<Integer>(ALL_PORTS);
     public static final HashMap<Integer, NodeInfo> ALL_NODES = new HashMap<>();
 
     public static void main(String[] args) {
         // address initiate
-
         Options options = new Options();
         Option programMode = new Option("m", MODE, true, "Peer or Controller");
         Option listenPort = new Option("p", PORT, true, "Port peer will listen to");
@@ -83,49 +86,73 @@ public class Application {
         }
     }
 
+
+
     public static void ControllerMode() {
         System.out.println("controller");
-        Scanner scanner = new Scanner(System.in);
-        ArrayList<RaftRpcClient> clients = new ArrayList<>();
-        for (NodeInfo nodeInfo: ALL_NODES.values()) {
-            clients.add(new RaftRpcClient(nodeInfo.hostname, nodeInfo.listenPort));
-        }
+
+        // May use random to selec
         Random rand = new Random();
+        // Create all RPCclient for requesting
+        HashMap<Integer, RaftRpcClient> clients = new HashMap<>();
+        ALL_NODES.values().forEach(nodeInfo -> clients.put(nodeInfo.nodeId,
+                                                        new RaftRpcClient(nodeInfo.hostname, nodeInfo.listenPort)));
 
         // Start operating
-        String input;
-        System.out.println(String.format("Please use command: %s, %s, %s, %s",
-                RaftCommand.GET.name(), RaftCommand.PUT.name(), RaftCommand.DELETE.name(), RaftCommand.UPDATE.name()));
+        String commands = "";
+        for(RaftCommand s: RaftCommand.values()) { commands += s.name() + ", "; }
+        System.out.println("Please use command: "+commands);
         System.out.println("Command format: COMMAND,KEY,VALUE\n");
+
+        // start reading user input
+        String input;
+        String chosedNode;
+        Scanner scanner = new Scanner(System.in);
+        RaftRpcClient selectedClient;
         while (true) {
-            input = scanner.nextLine();
-            System.out.println(input);
-            if (input.equalsIgnoreCase("stop")) {
-                break;
-            }
-            String[] values = input.split(",", 3);
-            if (values.length != 3) {
-                System.err.println("Invalid format");
-                String commands = "";
-                for(RaftCommand s: RaftCommand.values()) {
-                    commands += s.name() + ", ";
-                }
-                System.out.println("Command format: " + commands);
-                continue;
+            System.out.println("Please choose client from 8258, 8259, 8260. Empty for random: " );
+            chosedNode = scanner.nextLine();
+            try {
+                selectedClient = clients.get(Integer.parseInt(chosedNode));
+                System.out.println("Sending to node: " + chosedNode);
+            } catch (Exception e) {
+                int tmp = ALL_PORTS.get(rand.nextInt(ALL_PORTS.size()));
+                selectedClient = clients.get(tmp);
+                System.out.println("Sending to node: " + tmp);
             }
 
-            // normal operation
+            input = scanner.nextLine();
+            if (input.equalsIgnoreCase("stop")) { break; }
+
             try {
-                RaftRpcClient selectedClient = clients.get(rand.nextInt(clients.size()));
-                RaftClientResponse response = selectedClient.handleClientRequest(
-                        new RaftClientRequest(
-                                RaftCommand.valueOf(values[0]),
-                                values[1],
-                                values[2]
-                        )
-                );
+                String[] values = input.split(",", 3);
+                RaftCommand command = RaftCommand.valueOf(values[0].toUpperCase());
+
+                RaftClientResponse response;
+                switch (command) {
+                    case GETSTORAGE:
+                    case GETALLLOGS:
+                    case FINDLEADER:
+                        response = selectedClient.handleClientRequest(new RaftClientRequest(command, "", ""));
+                        break;
+                    case GET:
+                    case PUT:
+                    case UPDATE:
+                    default:
+                        response = selectedClient.handleClientRequest(
+                                new RaftClientRequest(
+                                        command,
+                                        values[1],
+                                        values[2]
+                                )
+                        );
+                        break;
+
+                }
                 System.out.println(response);
             } catch (Exception e) {
+                System.out.println("Please use command: "+commands);
+                System.out.println("Command format: COMMAND,KEY,VALUE\n");
                 System.err.println(e.getMessage());
             }
         }
@@ -133,7 +160,6 @@ public class Application {
 
     public static void NodeMode(int listenPort) {
         System.out.println("Node mode at port: "+listenPort);
-        // TODO: check listen port is in our peer set;;
         if (!(PORTS.contains(listenPort))) {
             System.out.println("Please one of the following port: ");
             PORTS.forEach((p) -> System.out.println(p));
@@ -146,7 +172,8 @@ public class Application {
                 new AddressBook(
                         ALL_NODES.get(listenPort),
                         ALL_NODES.values().toArray(new NodeInfo[PORTS.size()])),
-                new InMemoryStorage()
+                new InMemoryStorage(),
+                new JsonLogStorage()
         );
         node.run();
         while(true) {
