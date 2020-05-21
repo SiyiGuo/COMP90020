@@ -7,106 +7,104 @@ import getFakeData from './GetFakeData';
 class TimelineComponent extends Component {
   state = {
     all_nodes: [],
-    last_logs: {},
-    following_logs: {}
+    logs: {},
   }
 
   componentDidMount() {
     getFakeData()
       .then(data => {
-        let all_nodes = data.all_nodes;
-        let last_logs = data.init_status;
-        let following_logs = data.following_logs;
-
-        // comcat log entries 
-        let timeStamps = Object.keys(following_logs).sort();
-        let cum_logs = {0: {}};
-        for (const index in all_nodes) {
-          cum_logs[0][all_nodes[index]] = [last_logs[all_nodes[index]]];
+        let all_nodes = data.all_nodes.sort();
+        
+        // index using timestamp
+        let reverse_index_log = {};
+        for (let i = 0; i < all_nodes.length; i++) {
+          const node_id = all_nodes[i];
+          const node_logs = data[node_id];
+          for (let timestamp in node_logs) {
+            if (!(timestamp in reverse_index_log)) {
+              reverse_index_log[timestamp] = {}
+            }
+            reverse_index_log[timestamp][node_id] = node_logs[timestamp];
+          }
         }
 
-        let temp = JSON.parse(JSON.stringify(cum_logs[0]));
-        for (let i = 0; i < timeStamps.length; i++) {
-          let logs = following_logs[timeStamps[i]];
-          for (let node_id in logs) {
-            temp[node_id].push(logs[node_id]);
+        // accumalate logs from the beginning 
+        // todo: round timestamp to 100ms precision?
+        let timestamps = Object.keys(reverse_index_log).sort();
+        let current_logs = {} // record the logs of each node in current timestamp
+        for (let i = 0; i < all_nodes.length; i++) {
+          current_logs[all_nodes[i]] = []
+        }
+        
+        let final_logs = {}
+        for (let i = 0; i < timestamps.length; i++) {
+          const node_logs = reverse_index_log[timestamps[i]];
+          for (const node_id in node_logs) {
+            current_logs[node_id] = node_logs[node_id];
           }
-          cum_logs[timeStamps[i]] = temp;
-          temp = JSON.parse(JSON.stringify(cum_logs[timeStamps[i]]));
+          final_logs[timestamps[i]] = JSON.parse(JSON.stringify(current_logs));
         }
 
         this.setState({
           all_nodes: all_nodes,
-          last_logs: last_logs,
-          following_logs: cum_logs,
+          logs: final_logs
         });
       })
   }
 
   render() {
     return (
-      <div className="timeline">
-        <Timeline>
-          {this.drawTimeline()}
-        </Timeline>
+      <div className="timeline" style={{marginLeft: "60px"}}>
+        <h1>Timeline of logs</h1>
+        {this.drawTimelines()}
       </div>
     );
   }
 
-  drawTimeline =  () => {
-    const timestamps = Object.keys(this.state.following_logs).sort()
+  drawTimelines =  () => {
+    const timestamps = Object.keys(this.state.logs).sort();
     return (
-      timestamps.map(key => {
-        const logs = this.state.following_logs[key];
-        return (
-          <Timeline.Item>
-            <p>timestamp: {key === 0 ? 'Initial' : key}</p>
-            {
-              Object.keys(logs).map((node_id, index) => {
-                const entries = logs[node_id];
-                return (
-                  <div className="Row">
-                    <div 
-                      className="Column" 
-                      style={{
-                          width:'70px', 
-                          backgroundColor: entries[entries.length - 1].state == 'leader' ? 'red' : ''
-                          }}>
-                      <p>
-                          {entries[entries.length - 1].state}<br/>{node_id}
-                      </p>
-                    </div>
-                    {
-                      this.drawNode(entries)
-                    }
-                  </div>
-                );
-              })
-            }
-          </Timeline.Item> 
-        );
-      })
-    );
-  }
-
-  drawNode = (entries) => {
-    return entries.map(
-      logEntry => {
-        if (!logEntry) return "";
-        let currentCommittedIndex = entries[entries.length - 1].committed_index;
-        return this.drawLogEntry(logEntry, currentCommittedIndex)
-      }
+      <Timeline>
+        {
+          timestamps.map(timestamp => {
+            const logs = this.state.logs[timestamp];
+            return (
+              <Timeline.Item>
+                <p>timestamp: {timestamp}</p>
+                  {this.state.all_nodes.map(node_id => 
+                    this.drawNode(node_id, logs[node_id])
+                  )}
+              </Timeline.Item>
+            )
+          })
+        }
+      </Timeline>
     )
   }
 
-  drawLogEntry = (log, currentCommittedIndex) => {
+  drawNode = (node_id, logs) => {
+    if (logs.length == 0) {
+      return "";
+    }
+    let isLeader = logs[logs.length - 1].leader == node_id ? true : false;
     return (
-      <div className="rectangle" style={{backgroundColor: log.index > currentCommittedIndex ? 'yellow' : '#BBFF33'}}>
+      <div className="Row">
+        <div className="Column" style={{width:'50px', height: '50px', backgroundColor: isLeader ? '#BCF7F7' : ''}}>
+          <p>{isLeader ? 'Leader' : ''}<br/> {node_id}</p>
+        </div>
+        {logs.map(log => this.drawLogEntry(log))}
+      </div>
+    );
+  }
+
+  drawLogEntry = (log) => {
+    return (
+      <div className="rectangle">
         <p style={{fontSize: '10px', margin: 0}}>term: {log.term}</p>
         <p style={{fontSize: '10px', margin: 0}}>index: {log.index}</p>
-        <p style={{fontSize: '20px', margin: 0}}>{log.log_entry.command}</p>
+        <p style={{fontSize: '20px', margin: 0}}>{log.command}</p>
         <p style={{fontSize: '10px', margin: 0}}>
-          {log.log_entry.key}: {log.log_entry.value}
+          {log.key}: {log.value}
         </p>
       </div>
     )
