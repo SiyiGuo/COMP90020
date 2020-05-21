@@ -5,15 +5,20 @@ from flask import Flask , send_file
 app = Flask (__name__)
 @app.route('/')
 def DownloadMergedJson() -> str:
-    result = []
-    for f in glob.glob("*.json"):
+    result = {}
+    logs = {}
+    node_ids =[]
+    for f in glob.glob("history_*.json"):
+        node_ids.append(str(f).split('.')[0].split('_')[1])
+
+    result["all_nodes"] = node_ids
+
+    for f in glob.glob("history_*.json"):
+        node_id = str(f).split('.')[0].split('_')[1]
         with open(f, "rb") as infile:
-            result.append(json.load(infile))
+            result[node_id] = json.load(infile)
 
-    with open("merged_node_data.json", "wb") as outfile:
-        json.dump(result, outfile)
-
-    return send_file("merged_node_data.json")
+    return result
 
 
 app.run()
