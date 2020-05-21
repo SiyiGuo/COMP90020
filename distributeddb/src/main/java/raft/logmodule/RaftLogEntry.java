@@ -26,6 +26,7 @@ public class RaftLogEntry {
     public JSONObject toJson() {
         JSONObject obj = new JSONObject();
         obj.put("term", term);
+        obj.put("key", key);
         obj.put("value", value);
         obj.put("command", command);
         obj.put("index", index);
