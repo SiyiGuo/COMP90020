@@ -66,4 +66,8 @@ public class RaftStateMachine implements StateMachine {
             this.stroage.delete(key);
         }
     }
+
+    public Storage getStorage() {
+        return stroage;
+    }
 }
