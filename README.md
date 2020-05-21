@@ -1,16 +1,18 @@
 # README
 
-### Introduction ###
+## Introduction ##
 This is the project for COMP90020 Distributed Algorithm. We implement the Raft algorithm and having a command line tool to interact with it, as well as a front end package to visualize node log.
 
 At this implementation, we set to be a fix of 3 node cluster. 
 
-### Project Requirement ###
+## Project Requirement ##
 Oracle Java 8
 
-Maven
+Maven 3.6.0
 
-### File Structure ###
+## File Structure ##
+The project is structured as follows:
+
 distributeddb: package contains the raft algorithm implementation and some backend application code
 
 frontend: the frontend application for visualization
@@ -21,17 +23,17 @@ report: placehold for report related document.
 
 Dockerfile, docker-compose, start.sh: Help launching the project.
 
-### Design Document ###
+## Design Document ##
 The program architecture is described as below
 
 Taken from: https://github.com/stateIs0/lu-raft-kv
 
 ![Architecture](./design.png)
 
-### To Use the Application ###
+## To Use the Application ##
 The application can run natively or run in the docker.
 
-#### before running the application ####
+### before running the application ###
 Install all the dependency and generate the grpc related files
 ```
 cd distributeddb
@@ -44,7 +46,7 @@ cd distributeddb
 mvn package
 ```
 
-#### To run without docker ####
+### To run without docker ###
 Command Syntax
 ```
 java -jar $(path to package) -m (peer/controller) -p (Peer only, only 8258, 8259, 8260)
@@ -64,7 +66,7 @@ cd distributeddb/target
 java -jar .\original-distributeddb-1.0-SNAPSHOT.jar -m controller -h localhost
 ```
 
-#### To run with docker ####
+### To run with docker ###
 Make sure you follow before running the application first
 
 0. cd the root directory of the project
@@ -85,11 +87,11 @@ cd distributeddb/target
 java -jar .\original-distributeddb-1.0-SNAPSHOT.jar -m peer -p 8260 -h localhost
 ```
 
-### Contributor ###
-Siyi Guo, 737008
+## Contributor ##
+Siyi Guo
 
-Junlin chen, 1065399
+Junlin chen
 
-Jihai Fan, 832919
+Mofan Li
 
-Mofan Li, 741567
+Jihai Fan
