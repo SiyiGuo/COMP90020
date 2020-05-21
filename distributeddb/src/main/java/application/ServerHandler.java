@@ -44,7 +44,7 @@ public class ServerHandler {
                             req.key,
                             req.value
                     );
-                    this.node.getLogModule().append(clientEntry);
+                    this.node.getLogModule().append(clientEntry, this.node.addressBook.getLeaderId());
                     return new RaftClientResponse(req.command, req.key, "success");
             }
         }

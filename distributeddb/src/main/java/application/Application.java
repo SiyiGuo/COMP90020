@@ -2,6 +2,7 @@ package application;
 
 
 import application.storage.InMemoryStorage;
+import application.storage.JsonLogStorage;
 import io.grpc.netty.shaded.io.netty.util.internal.logging.InternalLoggerFactory;
 import io.grpc.netty.shaded.io.netty.util.internal.logging.Log4JLoggerFactory;
 import org.apache.commons.cli.CommandLine;
@@ -171,7 +172,8 @@ public class Application {
                 new AddressBook(
                         ALL_NODES.get(listenPort),
                         ALL_NODES.values().toArray(new NodeInfo[PORTS.size()])),
-                new InMemoryStorage()
+                new InMemoryStorage(),
+                new JsonLogStorage()
         );
         node.run();
         while(true) {
