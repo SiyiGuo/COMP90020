@@ -1,4 +1,4 @@
-version: '3'
+version: '3.2'
 
 services:
   node1:
@@ -6,21 +6,24 @@ services:
     ports:
       - "8258:8258"
     command: -m peer -p 8258 -h host.docker.internal
+    volumes:
+      - ./8258.json:/8258.json
+      - ./history_8258.json:/history_8258.json
 
   node2:
     image: raft
     ports:
       - "8259:8259"
     command: -m peer -p 8259 -h host.docker.internal
+    volumes:
+      - ./8258.json:/8259.json
+      - ./history_8259.json:/history_8259.json
 
   node3:
     image: raft
     ports:
       - "8260:8260"
     command: -m peer -p 8260 -h host.docker.internal
-  
-  node3:
-    image: raft
-    ports:
-      - "8260:8260"
-    command: -m peer -p 8260 -h host.docker.internal
+    volumes:
+      - ./8260.json:/8260.json
+      - ./history_8260.json:/history_8260.json
