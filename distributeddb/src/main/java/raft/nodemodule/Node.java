@@ -2,6 +2,7 @@ package raft.nodemodule;
 
 import application.ServerHandler;
 import application.storage.DummyLogStorage;
+import application.storage.JsonLogStorage;
 import application.storage.LogStorage;
 import application.storage.Storage;
 import org.apache.logging.log4j.LogManager;
@@ -92,8 +93,9 @@ public class Node implements LifeCycle, Runnable {
 
         this.addressBook = addressBook;
         this.storage = storage;
-        this.logStorage = logStorage;
         this.nodeId = this.addressBook.getSelfInfo().nodeId;
+        this.logStorage = logStorage;
+        this.logStorage.setLogName(Integer.toString(this.nodeId));
         this.nodehook = this;
 
         this.commitIndex = 0;
@@ -108,7 +110,7 @@ public class Node implements LifeCycle, Runnable {
     }
 
     public Node(NodeConfig config, AddressBook addressBook, Storage storage) {
-        this(config, addressBook, storage, new DummyLogStorage());
+        this(config, addressBook, storage, new JsonLogStorage());
     }
 
     @Override
