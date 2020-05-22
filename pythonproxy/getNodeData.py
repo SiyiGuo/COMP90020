@@ -2,8 +2,10 @@ import json
 import glob
 from flask import Flask , send_file
 import os
+from flask_cors import CORS
 
 app = Flask (__name__)
+cors = CORS(app)
 @app.route('/')
 def DownloadMergedJson() -> str:
     result = {}
