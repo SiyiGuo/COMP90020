@@ -68,9 +68,11 @@ class TimelineComponent extends Component {
         {
           timestamps.map(timestamp => {
             const logs = this.state.logs[timestamp];
+            var date = new Date();
+            date.setTime(timestamp);
             return (
               <Timeline.Item>
-                <p>timestamp: {timestamp}</p>
+                <p>timestamp: {date.toString().slice(0,24)+ ":" + date.getMilliseconds()}</p>
                   {this.state.all_nodes.map(node_id => 
                     this.drawNode(node_id, logs[node_id])
                   )}
